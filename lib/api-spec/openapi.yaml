@@ -1,22 +1,33 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: JudoClub Manager API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication
+  - name: clubs
+    description: Club management
+  - name: athletes
+    description: Athlete management
+  - name: payments
+    description: Payment tracking
+  - name: competitions
+    description: Competition management
+  - name: fights
+    description: Fight management
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +35,883 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user profile
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+    patch:
+      operationId: updateMe
+      tags: [auth]
+      summary: Update current user profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdate"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /clubs:
+    get:
+      operationId: listClubs
+      tags: [clubs]
+      summary: List all clubs
+      responses:
+        "200":
+          description: List of clubs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Club"
+    post:
+      operationId: createClub
+      tags: [clubs]
+      summary: Create a new club
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClubInput"
+      responses:
+        "201":
+          description: Created club
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Club"
+
+  /clubs/{clubId}:
+    get:
+      operationId: getClub
+      tags: [clubs]
+      summary: Get club by ID
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Club
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Club"
+    patch:
+      operationId: updateClub
+      tags: [clubs]
+      summary: Update club
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClubUpdate"
+      responses:
+        "200":
+          description: Updated club
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Club"
+    delete:
+      operationId: deleteClub
+      tags: [clubs]
+      summary: Delete club
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /clubs/{clubId}/stats:
+    get:
+      operationId: getClubStats
+      tags: [clubs]
+      summary: Get club statistics
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Club stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubStats"
+
+  /clubs/{clubId}/members:
+    get:
+      operationId: listClubMembers
+      tags: [clubs]
+      summary: List coaches/members of a club
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Club members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ClubMember"
+    post:
+      operationId: addClubMember
+      tags: [clubs]
+      summary: Add a coach/member to a club
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClubMemberInput"
+      responses:
+        "201":
+          description: Added member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubMember"
+
+  /clubs/{clubId}/members/{memberId}:
+    delete:
+      operationId: removeClubMember
+      tags: [clubs]
+      summary: Remove a member from a club
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: memberId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Removed
+
+  /athletes:
+    get:
+      operationId: listAthletes
+      tags: [athletes]
+      summary: List athletes (optionally filtered by clubId)
+      parameters:
+        - name: clubId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of athletes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Athlete"
+    post:
+      operationId: createAthlete
+      tags: [athletes]
+      summary: Create a new athlete
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AthleteInput"
+      responses:
+        "201":
+          description: Created athlete
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Athlete"
+
+  /athletes/{athleteId}:
+    get:
+      operationId: getAthlete
+      tags: [athletes]
+      summary: Get athlete by ID
+      parameters:
+        - name: athleteId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Athlete
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Athlete"
+    patch:
+      operationId: updateAthlete
+      tags: [athletes]
+      summary: Update athlete
+      parameters:
+        - name: athleteId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AthleteUpdate"
+      responses:
+        "200":
+          description: Updated athlete
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Athlete"
+    delete:
+      operationId: deleteAthlete
+      tags: [athletes]
+      summary: Delete athlete
+      parameters:
+        - name: athleteId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /athletes/{athleteId}/stats:
+    get:
+      operationId: getAthleteStats
+      tags: [athletes]
+      summary: Get athlete statistics (wins, losses, fights, points)
+      parameters:
+        - name: athleteId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Athlete stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AthleteStats"
+
+  /athletes/{athleteId}/fights:
+    get:
+      operationId: getAthleteFights
+      tags: [athletes]
+      summary: Get fight history for an athlete
+      parameters:
+        - name: athleteId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Fight history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FightWithContext"
+
+  /athletes/{athleteId}/payments:
+    get:
+      operationId: getAthletePayments
+      tags: [payments]
+      summary: Get payment history for an athlete
+      parameters:
+        - name: athleteId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Payment history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Payment"
+
+  /payments:
+    get:
+      operationId: listPayments
+      tags: [payments]
+      summary: List payments (filtered by clubId or athleteId)
+      parameters:
+        - name: clubId
+          in: query
+          schema:
+            type: integer
+        - name: athleteId
+          in: query
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [paid, pending, overdue]
+      responses:
+        "200":
+          description: Payments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Payment"
+    post:
+      operationId: createPayment
+      tags: [payments]
+      summary: Create a payment record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentInput"
+      responses:
+        "201":
+          description: Created payment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+
+  /payments/{paymentId}:
+    patch:
+      operationId: updatePayment
+      tags: [payments]
+      summary: Update a payment (mark paid, etc.)
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentUpdate"
+      responses:
+        "200":
+          description: Updated payment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+    delete:
+      operationId: deletePayment
+      tags: [payments]
+      summary: Delete a payment record
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /clubs/{clubId}/payment-summary:
+    get:
+      operationId: getClubPaymentSummary
+      tags: [payments]
+      summary: Get payment summary for a club
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Payment summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentSummary"
+
+  /competitions:
+    get:
+      operationId: listCompetitions
+      tags: [competitions]
+      summary: List competitions (optionally filtered by clubId)
+      parameters:
+        - name: clubId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of competitions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Competition"
+    post:
+      operationId: createCompetition
+      tags: [competitions]
+      summary: Create a competition
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompetitionInput"
+      responses:
+        "201":
+          description: Created competition
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Competition"
+
+  /competitions/{competitionId}:
+    get:
+      operationId: getCompetition
+      tags: [competitions]
+      summary: Get competition by ID
+      parameters:
+        - name: competitionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Competition with weight categories
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompetitionDetail"
+    patch:
+      operationId: updateCompetition
+      tags: [competitions]
+      summary: Update competition
+      parameters:
+        - name: competitionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompetitionUpdate"
+      responses:
+        "200":
+          description: Updated competition
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Competition"
+    delete:
+      operationId: deleteCompetition
+      tags: [competitions]
+      summary: Delete competition
+      parameters:
+        - name: competitionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /competitions/{competitionId}/categories:
+    get:
+      operationId: listWeightCategories
+      tags: [competitions]
+      summary: List weight categories for competition
+      parameters:
+        - name: competitionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Weight categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WeightCategory"
+    post:
+      operationId: createWeightCategory
+      tags: [competitions]
+      summary: Add a weight category to a competition
+      parameters:
+        - name: competitionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WeightCategoryInput"
+      responses:
+        "201":
+          description: Created weight category
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeightCategory"
+
+  /competitions/{competitionId}/categories/{categoryId}:
+    delete:
+      operationId: deleteWeightCategory
+      tags: [competitions]
+      summary: Remove weight category
+      parameters:
+        - name: competitionId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: categoryId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /competitions/{competitionId}/participants:
+    get:
+      operationId: listParticipants
+      tags: [competitions]
+      summary: List participants in a competition
+      parameters:
+        - name: competitionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Participants
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Participant"
+    post:
+      operationId: addParticipant
+      tags: [competitions]
+      summary: Register an athlete for a competition
+      parameters:
+        - name: competitionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ParticipantInput"
+      responses:
+        "201":
+          description: Added participant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Participant"
+
+  /competitions/{competitionId}/participants/{participantId}:
+    delete:
+      operationId: removeParticipant
+      tags: [competitions]
+      summary: Remove participant from competition
+      parameters:
+        - name: competitionId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: participantId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Removed
+
+  /competitions/{competitionId}/generate-bracket:
+    post:
+      operationId: generateBracket
+      tags: [competitions]
+      summary: Generate bracket/schedule for a competition category
+      parameters:
+        - name: competitionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateBracketInput"
+      responses:
+        "200":
+          description: Generated fights
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Fight"
+
+  /competitions/{competitionId}/fights:
+    get:
+      operationId: listFights
+      tags: [fights]
+      summary: List fights in a competition
+      parameters:
+        - name: competitionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Fights
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Fight"
+
+  /fights/{fightId}:
+    get:
+      operationId: getFight
+      tags: [fights]
+      summary: Get fight details
+      parameters:
+        - name: fightId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Fight with events
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FightDetail"
+    patch:
+      operationId: updateFight
+      tags: [fights]
+      summary: Update fight (scores, winner, status)
+      parameters:
+        - name: fightId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FightUpdate"
+      responses:
+        "200":
+          description: Updated fight
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fight"
+
+  /fights/{fightId}/start:
+    post:
+      operationId: startFight
+      tags: [fights]
+      summary: Start a fight (begin timer)
+      parameters:
+        - name: fightId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Started fight
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fight"
+
+  /fights/{fightId}/finish:
+    post:
+      operationId: finishFight
+      tags: [fights]
+      summary: Finish a fight and record result
+      parameters:
+        - name: fightId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FinishFightInput"
+      responses:
+        "200":
+          description: Finished fight
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fight"
+
+  /fights/{fightId}/events:
+    get:
+      operationId: listFightEvents
+      tags: [fights]
+      summary: List score events in a fight
+      parameters:
+        - name: fightId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Fight events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FightEvent"
+    post:
+      operationId: addFightEvent
+      tags: [fights]
+      summary: Add a score event to a fight (ippon, waza-ari, shido, hansoku)
+      parameters:
+        - name: fightId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FightEventInput"
+      responses:
+        "201":
+          description: Added event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FightEvent"
+
+  /fights/{fightId}/events/{eventId}:
+    delete:
+      operationId: deleteFightEvent
+      tags: [fights]
+      summary: Delete a fight event (undo)
+      parameters:
+        - name: fightId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +922,837 @@ components:
       required:
         - status
 
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        clerkId:
+          type: string
+        email:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        role:
+          type: string
+          enum: [super_admin, club_admin, coach, athlete, parent]
+        clubId:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - clerkId
+        - email
+        - role
+        - createdAt
+
+    UserUpdate:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        role:
+          type: string
+          enum: [super_admin, club_admin, coach, athlete, parent]
+
+    Club:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        city:
+          type: ["string", "null"]
+        country:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        logoUrl:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        memberCount:
+          type: integer
+        athleteCount:
+          type: integer
+      required:
+        - id
+        - name
+        - createdAt
+        - memberCount
+        - athleteCount
+
+    ClubInput:
+      type: object
+      properties:
+        name:
+          type: string
+        city:
+          type: string
+        country:
+          type: string
+        description:
+          type: string
+        logoUrl:
+          type: string
+      required:
+        - name
+
+    ClubUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        city:
+          type: string
+        country:
+          type: string
+        description:
+          type: string
+        logoUrl:
+          type: string
+
+    ClubStats:
+      type: object
+      properties:
+        clubId:
+          type: integer
+        totalAthletes:
+          type: integer
+        totalCoaches:
+          type: integer
+        totalCompetitions:
+          type: integer
+        totalFights:
+          type: integer
+        pendingPayments:
+          type: integer
+        paidPayments:
+          type: integer
+        overduePayments:
+          type: integer
+        recentCompetitions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Competition"
+      required:
+        - clubId
+        - totalAthletes
+        - totalCoaches
+        - totalCompetitions
+        - totalFights
+        - pendingPayments
+        - paidPayments
+        - overduePayments
+        - recentCompetitions
+
+    ClubMember:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        clubId:
+          type: integer
+        role:
+          type: string
+          enum: [admin, coach]
+        user:
+          $ref: "#/components/schemas/User"
+        joinedAt:
+          type: string
+      required:
+        - id
+        - userId
+        - clubId
+        - role
+        - joinedAt
+
+    ClubMemberInput:
+      type: object
+      properties:
+        email:
+          type: string
+        role:
+          type: string
+          enum: [admin, coach]
+      required:
+        - email
+        - role
+
+    Athlete:
+      type: object
+      properties:
+        id:
+          type: integer
+        clubId:
+          type: integer
+        firstName:
+          type: string
+        lastName:
+          type: string
+        birthDate:
+          type: ["string", "null"]
+        gender:
+          type: string
+          enum: [male, female]
+        weightKg:
+          type: ["number", "null"]
+        belt:
+          type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+        parentName:
+          type: ["string", "null"]
+        parentPhone:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - clubId
+        - firstName
+        - lastName
+        - gender
+        - createdAt
+
+    AthleteInput:
+      type: object
+      properties:
+        clubId:
+          type: integer
+        firstName:
+          type: string
+        lastName:
+          type: string
+        birthDate:
+          type: string
+        gender:
+          type: string
+          enum: [male, female]
+        weightKg:
+          type: number
+        belt:
+          type: string
+        phone:
+          type: string
+        parentName:
+          type: string
+        parentPhone:
+          type: string
+        notes:
+          type: string
+      required:
+        - clubId
+        - firstName
+        - lastName
+        - gender
+
+    AthleteUpdate:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        birthDate:
+          type: string
+        gender:
+          type: string
+          enum: [male, female]
+        weightKg:
+          type: number
+        belt:
+          type: string
+        phone:
+          type: string
+        parentName:
+          type: string
+        parentPhone:
+          type: string
+        notes:
+          type: string
+
+    AthleteStats:
+      type: object
+      properties:
+        athleteId:
+          type: integer
+        totalFights:
+          type: integer
+        wins:
+          type: integer
+        losses:
+          type: integer
+        draws:
+          type: integer
+        ipponWins:
+          type: integer
+        wazaAriWins:
+          type: integer
+        shidoReceived:
+          type: integer
+        winRate:
+          type: number
+        lastFightDate:
+          type: ["string", "null"]
+      required:
+        - athleteId
+        - totalFights
+        - wins
+        - losses
+        - draws
+        - ipponWins
+        - wazaAriWins
+        - shidoReceived
+        - winRate
+
+    Payment:
+      type: object
+      properties:
+        id:
+          type: integer
+        athleteId:
+          type: integer
+        clubId:
+          type: integer
+        amount:
+          type: number
+        currency:
+          type: string
+        description:
+          type: string
+        dueDate:
+          type: ["string", "null"]
+        paidAt:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [pending, paid, overdue]
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        athlete:
+          $ref: "#/components/schemas/Athlete"
+      required:
+        - id
+        - athleteId
+        - clubId
+        - amount
+        - currency
+        - description
+        - status
+        - createdAt
+
+    PaymentInput:
+      type: object
+      properties:
+        athleteId:
+          type: integer
+        clubId:
+          type: integer
+        amount:
+          type: number
+        currency:
+          type: string
+        description:
+          type: string
+        dueDate:
+          type: string
+        notes:
+          type: string
+      required:
+        - athleteId
+        - clubId
+        - amount
+        - description
+
+    PaymentUpdate:
+      type: object
+      properties:
+        amount:
+          type: number
+        description:
+          type: string
+        dueDate:
+          type: string
+        paidAt:
+          type: string
+        status:
+          type: string
+          enum: [pending, paid, overdue]
+        notes:
+          type: string
+
+    PaymentSummary:
+      type: object
+      properties:
+        clubId:
+          type: integer
+        totalAmount:
+          type: number
+        paidAmount:
+          type: number
+        pendingAmount:
+          type: number
+        overdueAmount:
+          type: number
+        paidCount:
+          type: integer
+        pendingCount:
+          type: integer
+        overdueCount:
+          type: integer
+      required:
+        - clubId
+        - totalAmount
+        - paidAmount
+        - pendingAmount
+        - overdueAmount
+        - paidCount
+        - pendingCount
+        - overdueCount
+
+    Competition:
+      type: object
+      properties:
+        id:
+          type: integer
+        clubId:
+          type: integer
+        name:
+          type: string
+        location:
+          type: ["string", "null"]
+        date:
+          type: string
+        format:
+          type: string
+          enum: [olympic, round_robin]
+        fightDurationSeconds:
+          type: integer
+        status:
+          type: string
+          enum: [draft, active, finished]
+        participantCount:
+          type: integer
+        createdAt:
+          type: string
+      required:
+        - id
+        - clubId
+        - name
+        - date
+        - format
+        - fightDurationSeconds
+        - status
+        - participantCount
+        - createdAt
+
+    CompetitionInput:
+      type: object
+      properties:
+        clubId:
+          type: integer
+        name:
+          type: string
+        location:
+          type: string
+        date:
+          type: string
+        format:
+          type: string
+          enum: [olympic, round_robin]
+        fightDurationSeconds:
+          type: integer
+      required:
+        - clubId
+        - name
+        - date
+        - format
+
+    CompetitionUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        location:
+          type: string
+        date:
+          type: string
+        format:
+          type: string
+          enum: [olympic, round_robin]
+        fightDurationSeconds:
+          type: integer
+        status:
+          type: string
+          enum: [draft, active, finished]
+
+    CompetitionDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        clubId:
+          type: integer
+        name:
+          type: string
+        location:
+          type: ["string", "null"]
+        date:
+          type: string
+        format:
+          type: string
+          enum: [olympic, round_robin]
+        fightDurationSeconds:
+          type: integer
+        status:
+          type: string
+          enum: [draft, active, finished]
+        participantCount:
+          type: integer
+        createdAt:
+          type: string
+        categories:
+          type: array
+          items:
+            $ref: "#/components/schemas/WeightCategory"
+      required:
+        - id
+        - clubId
+        - name
+        - date
+        - format
+        - fightDurationSeconds
+        - status
+        - participantCount
+        - createdAt
+        - categories
+
+    WeightCategory:
+      type: object
+      properties:
+        id:
+          type: integer
+        competitionId:
+          type: integer
+        name:
+          type: string
+        gender:
+          type: string
+          enum: [male, female, mixed]
+        maxWeightKg:
+          type: ["number", "null"]
+        participantCount:
+          type: integer
+      required:
+        - id
+        - competitionId
+        - name
+        - gender
+        - participantCount
+
+    WeightCategoryInput:
+      type: object
+      properties:
+        name:
+          type: string
+        gender:
+          type: string
+          enum: [male, female, mixed]
+        maxWeightKg:
+          type: number
+      required:
+        - name
+        - gender
+
+    Participant:
+      type: object
+      properties:
+        id:
+          type: integer
+        competitionId:
+          type: integer
+        athleteId:
+          type: integer
+        categoryId:
+          type: integer
+        athlete:
+          $ref: "#/components/schemas/Athlete"
+        seed:
+          type: ["integer", "null"]
+      required:
+        - id
+        - competitionId
+        - athleteId
+        - categoryId
+
+    ParticipantInput:
+      type: object
+      properties:
+        athleteId:
+          type: integer
+        categoryId:
+          type: integer
+        seed:
+          type: integer
+      required:
+        - athleteId
+        - categoryId
+
+    GenerateBracketInput:
+      type: object
+      properties:
+        categoryId:
+          type: integer
+      required:
+        - categoryId
+
+    Fight:
+      type: object
+      properties:
+        id:
+          type: integer
+        competitionId:
+          type: integer
+        categoryId:
+          type: integer
+        athlete1Id:
+          type: ["integer", "null"]
+        athlete2Id:
+          type: ["integer", "null"]
+        athlete1:
+          $ref: "#/components/schemas/Athlete"
+        athlete2:
+          $ref: "#/components/schemas/Athlete"
+        winnerId:
+          type: ["integer", "null"]
+        athlete1Ippon:
+          type: integer
+        athlete1WazaAri:
+          type: integer
+        athlete1Shido:
+          type: integer
+        athlete2Ippon:
+          type: integer
+        athlete2WazaAri:
+          type: integer
+        athlete2Shido:
+          type: integer
+        status:
+          type: string
+          enum: [pending, in_progress, finished]
+        round:
+          type: ["integer", "null"]
+        position:
+          type: ["integer", "null"]
+        startedAt:
+          type: ["string", "null"]
+        finishedAt:
+          type: ["string", "null"]
+        durationSeconds:
+          type: ["integer", "null"]
+      required:
+        - id
+        - competitionId
+        - categoryId
+        - athlete1Ippon
+        - athlete1WazaAri
+        - athlete1Shido
+        - athlete2Ippon
+        - athlete2WazaAri
+        - athlete2Shido
+        - status
+
+    FightUpdate:
+      type: object
+      properties:
+        athlete1Ippon:
+          type: integer
+        athlete1WazaAri:
+          type: integer
+        athlete1Shido:
+          type: integer
+        athlete2Ippon:
+          type: integer
+        athlete2WazaAri:
+          type: integer
+        athlete2Shido:
+          type: integer
+        winnerId:
+          type: integer
+        status:
+          type: string
+          enum: [pending, in_progress, finished]
+
+    FinishFightInput:
+      type: object
+      properties:
+        winnerId:
+          type: ["integer", "null"]
+        durationSeconds:
+          type: integer
+      required:
+        - durationSeconds
+
+    FightDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        competitionId:
+          type: integer
+        categoryId:
+          type: integer
+        athlete1Id:
+          type: ["integer", "null"]
+        athlete2Id:
+          type: ["integer", "null"]
+        athlete1:
+          $ref: "#/components/schemas/Athlete"
+        athlete2:
+          $ref: "#/components/schemas/Athlete"
+        winnerId:
+          type: ["integer", "null"]
+        athlete1Ippon:
+          type: integer
+        athlete1WazaAri:
+          type: integer
+        athlete1Shido:
+          type: integer
+        athlete2Ippon:
+          type: integer
+        athlete2WazaAri:
+          type: integer
+        athlete2Shido:
+          type: integer
+        status:
+          type: string
+          enum: [pending, in_progress, finished]
+        round:
+          type: ["integer", "null"]
+        position:
+          type: ["integer", "null"]
+        startedAt:
+          type: ["string", "null"]
+        finishedAt:
+          type: ["string", "null"]
+        durationSeconds:
+          type: ["integer", "null"]
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/FightEvent"
+      required:
+        - id
+        - competitionId
+        - categoryId
+        - athlete1Ippon
+        - athlete1WazaAri
+        - athlete1Shido
+        - athlete2Ippon
+        - athlete2WazaAri
+        - athlete2Shido
+        - status
+        - events
+
+    FightWithContext:
+      type: object
+      properties:
+        id:
+          type: integer
+        competitionId:
+          type: integer
+        categoryId:
+          type: integer
+        competitionName:
+          type: string
+        competitionDate:
+          type: string
+        opponentId:
+          type: ["integer", "null"]
+        opponent:
+          $ref: "#/components/schemas/Athlete"
+        isWinner:
+          type: boolean
+        status:
+          type: string
+          enum: [pending, in_progress, finished]
+        athlete1Ippon:
+          type: integer
+        athlete1WazaAri:
+          type: integer
+        athlete1Shido:
+          type: integer
+        athlete2Ippon:
+          type: integer
+        athlete2WazaAri:
+          type: integer
+        athlete2Shido:
+          type: integer
+        finishedAt:
+          type: ["string", "null"]
+      required:
+        - id
+        - competitionId
+        - categoryId
+        - competitionName
+        - competitionDate
+        - isWinner
+        - status
+        - athlete1Ippon
+        - athlete1WazaAri
+        - athlete1Shido
+        - athlete2Ippon
+        - athlete2WazaAri
+        - athlete2Shido
+
+    FightEvent:
+      type: object
+      properties:
+        id:
+          type: integer
+        fightId:
+          type: integer
+        athleteId:
+          type: integer
+        eventType:
+          type: string
+          enum: [ippon, waza_ari, shido, hansoku]
+        timestampSeconds:
+          type: integer
+        createdAt:
+          type: string
+      required:
+        - id
+        - fightId
+        - athleteId
+        - eventType
+        - timestampSeconds
+        - createdAt
+
+    FightEventInput:
+      type: object
+      properties:
+        athleteId:
+          type: integer
+        eventType:
+          type: string
+          enum: [ippon, waza_ari, shido, hansoku]
+        timestampSeconds:
+          type: integer
+      required:
+        - athleteId
+        - eventType
+        - timestampSeconds
