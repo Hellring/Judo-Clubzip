@@ -5,9 +5,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetClub, useGetClubStats, useListClubMembers,
   useListClubAthletes, useListClubCoaches,
-  useAddClubMember, useRemoveClubMember,
+  useAddClubMember, useRemoveClubMember, useCreateAthlete,
   getListClubMembersQueryKey, getListClubCoachesQueryKey,
-  getGetClubStatsQueryKey,
+  getGetClubStatsQueryKey, getListClubAthletesQueryKey,
 } from "@workspace/api-client-react";
 import { getGetClubQueryKey } from "@workspace/api-client-react";
 import Layout from "@/components/layout";
@@ -42,6 +42,39 @@ export default function ClubDetailPage() {
 
   const addMember = useAddClubMember();
   const removeMember = useRemoveClubMember();
+  const createAthlete = useCreateAthlete();
+
+  const [athleteOpen, setAthleteOpen] = useState(false);
+  const [athleteForm, setAthleteForm] = useState({
+    firstName: "", lastName: "", gender: "male", birthDate: "", weightKg: "", belt: "",
+  });
+
+  const BELTS = ["Белый", "Жёлтый", "Оранжевый", "Зелёный", "Синий", "Коричневый", "Чёрный"];
+
+  const handleAddAthlete = (e: React.FormEvent) => {
+    e.preventDefault();
+    createAthlete.mutate(
+      {
+        data: {
+          clubId: id,
+          firstName: athleteForm.firstName,
+          lastName: athleteForm.lastName,
+          gender: athleteForm.gender as "male" | "female",
+          birthDate: athleteForm.birthDate || undefined,
+          weightKg: athleteForm.weightKg ? parseFloat(athleteForm.weightKg) : undefined,
+          belt: athleteForm.belt || undefined,
+        },
+      },
+      {
+        onSuccess: () => {
+          qc.invalidateQueries({ queryKey: getListClubAthletesQueryKey(id) });
+          qc.invalidateQueries({ queryKey: getGetClubStatsQueryKey(id) });
+          setAthleteOpen(false);
+          setAthleteForm({ firstName: "", lastName: "", gender: "male", birthDate: "", weightKg: "", belt: "" });
+        },
+      }
+    );
+  };
 
   const [coachOpen, setCoachOpen] = useState(false);
   const [coachForm, setCoachForm] = useState({
@@ -194,7 +227,72 @@ export default function ClubDetailPage() {
 
           <TabsContent value="athletes" className="mt-4">
             <Card>
-              <CardContent className="pt-4">
+              <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                <CardTitle className="text-base">Список спортсменов</CardTitle>
+                <Dialog open={athleteOpen} onOpenChange={setAthleteOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" data-testid="btn-add-athlete-club">
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      Добавить спортсмена
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Добавить спортсмена</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleAddAthlete} className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>{t("FirstName")} *</Label>
+                          <Input value={athleteForm.firstName} onChange={e => setAthleteForm(f => ({ ...f, firstName: e.target.value }))} required />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>{t("LastName")} *</Label>
+                          <Input value={athleteForm.lastName} onChange={e => setAthleteForm(f => ({ ...f, lastName: e.target.value }))} required />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>{t("Gender")} *</Label>
+                          <Select value={athleteForm.gender} onValueChange={v => setAthleteForm(f => ({ ...f, gender: v }))}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="male">{t("Male")}</SelectItem>
+                              <SelectItem value="female">{t("Female")}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>{t("BirthDate")}</Label>
+                          <Input type="date" value={athleteForm.birthDate} onChange={e => setAthleteForm(f => ({ ...f, birthDate: e.target.value }))} />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>{t("Weight")}</Label>
+                          <Input type="number" step="0.1" value={athleteForm.weightKg} onChange={e => setAthleteForm(f => ({ ...f, weightKg: e.target.value }))} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>{t("Belt")}</Label>
+                          <Select value={athleteForm.belt} onValueChange={v => setAthleteForm(f => ({ ...f, belt: v }))}>
+                            <SelectTrigger><SelectValue placeholder="Выберите пояс" /></SelectTrigger>
+                            <SelectContent>
+                              {BELTS.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button type="button" variant="outline" onClick={() => setAthleteOpen(false)}>{t("Cancel")}</Button>
+                        <Button type="submit" disabled={createAthlete.isPending}>
+                          {createAthlete.isPending ? "Сохранение..." : t("Save")}
+                        </Button>
+                      </div>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              </CardHeader>
+              <CardContent className="pt-0">
                 {athletes.length === 0 ? (
                   <div className="flex h-32 flex-col items-center justify-center gap-2 text-muted-foreground">
                     <Users className="h-8 w-8 opacity-40" />
