@@ -45,8 +45,10 @@ export default function ClubDetailPage() {
   const createAthlete = useCreateAthlete();
 
   const [athleteOpen, setAthleteOpen] = useState(false);
+  const [showAthleteContacts, setShowAthleteContacts] = useState(false);
   const [athleteForm, setAthleteForm] = useState({
     firstName: "", lastName: "", gender: "male", birthDate: "", weightKg: "", belt: "",
+    phone: "", parentName: "", parentPhone: "", notes: "",
   });
 
   const BELTS = ["Белый", "Жёлтый", "Оранжевый", "Зелёный", "Синий", "Коричневый", "Чёрный"];
@@ -63,6 +65,10 @@ export default function ClubDetailPage() {
           birthDate: athleteForm.birthDate || undefined,
           weightKg: athleteForm.weightKg ? parseFloat(athleteForm.weightKg) : undefined,
           belt: athleteForm.belt || undefined,
+          phone: athleteForm.phone || undefined,
+          parentName: athleteForm.parentName || undefined,
+          parentPhone: athleteForm.parentPhone || undefined,
+          notes: athleteForm.notes || undefined,
         },
       },
       {
@@ -70,7 +76,8 @@ export default function ClubDetailPage() {
           qc.invalidateQueries({ queryKey: getListClubAthletesQueryKey(id) });
           qc.invalidateQueries({ queryKey: getGetClubStatsQueryKey(id) });
           setAthleteOpen(false);
-          setAthleteForm({ firstName: "", lastName: "", gender: "male", birthDate: "", weightKg: "", belt: "" });
+          setShowAthleteContacts(false);
+          setAthleteForm({ firstName: "", lastName: "", gender: "male", birthDate: "", weightKg: "", belt: "", phone: "", parentName: "", parentPhone: "", notes: "" });
         },
       }
     );
@@ -282,6 +289,38 @@ export default function ClubDetailPage() {
                           </Select>
                         </div>
                       </div>
+                      {!showAthleteContacts ? (
+                        <button
+                          type="button"
+                          onClick={() => setShowAthleteContacts(true)}
+                          className="text-sm text-primary hover:underline flex items-center gap-1"
+                        >
+                          + Добавить контактные данные
+                        </button>
+                      ) : (
+                        <div className="rounded-lg border p-3 space-y-3 bg-muted/20">
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Контактные данные</p>
+                            <button type="button" onClick={() => { setShowAthleteContacts(false); setAthleteForm(f => ({ ...f, phone: "", parentName: "", parentPhone: "", notes: "" })); }} className="text-xs text-muted-foreground hover:text-destructive">✕ Убрать</button>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Телефон спортсмена</Label>
+                            <Input placeholder="+7..." value={athleteForm.phone} onChange={e => setAthleteForm(f => ({ ...f, phone: e.target.value }))} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Имя родителя / представителя</Label>
+                            <Input placeholder="Иванов Иван Иванович" value={athleteForm.parentName} onChange={e => setAthleteForm(f => ({ ...f, parentName: e.target.value }))} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Телефон родителя / представителя</Label>
+                            <Input placeholder="+7..." value={athleteForm.parentPhone} onChange={e => setAthleteForm(f => ({ ...f, parentPhone: e.target.value }))} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Заметки</Label>
+                            <Input placeholder="Дополнительная информация..." value={athleteForm.notes} onChange={e => setAthleteForm(f => ({ ...f, notes: e.target.value }))} />
+                          </div>
+                        </div>
+                      )}
                       <div className="flex justify-end gap-2">
                         <Button type="button" variant="outline" onClick={() => setAthleteOpen(false)}>{t("Cancel")}</Button>
                         <Button type="submit" disabled={createAthlete.isPending}>
