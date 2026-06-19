@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { requireAuth, getAuth } from "@clerk/express";
+import { requireAuth, getAuth, clerkClient } from "@clerk/express";
 import { db } from "@workspace/db";
 import { usersTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, count } from "drizzle-orm";
 
 const router = Router();
 
@@ -13,10 +13,26 @@ router.get("/me", requireAuth(), async (req, res) => {
   let user = await db.query.usersTable.findFirst({ where: eq(usersTable.clerkId, clerkId) });
 
   if (!user) {
+    const [{ value: totalUsers }] = await db.select({ value: count() }).from(usersTable);
+    const isFirstUser = totalUsers === 0;
+
+    let email = "";
+    let firstName: string | null = null;
+    let lastName: string | null = null;
+    try {
+      const clerkUser = await clerkClient.users.getUser(clerkId);
+      email = clerkUser.emailAddresses[0]?.emailAddress ?? "";
+      firstName = clerkUser.firstName ?? null;
+      lastName = clerkUser.lastName ?? null;
+    } catch {
+    }
+
     const [created] = await db.insert(usersTable).values({
       clerkId,
-      email: "",
-      role: "coach",
+      email,
+      firstName,
+      lastName,
+      role: isFirstUser ? "super_admin" : "coach",
     }).returning();
     user = created;
   }

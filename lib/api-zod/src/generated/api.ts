@@ -53,6 +53,48 @@ export const UpdateMeResponse = zod.object({
 
 
 /**
+ * @summary List all users (super_admin only)
+ */
+export const ListAdminUsersResponseItem = zod.object({
+  "id": zod.number(),
+  "clerkId": zod.string(),
+  "email": zod.string(),
+  "firstName": zod.string().nullish(),
+  "lastName": zod.string().nullish(),
+  "role": zod.enum(['super_admin', 'club_admin', 'coach', 'athlete', 'parent']),
+  "clubId": zod.number().nullish(),
+  "clubName": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+export const ListAdminUsersResponse = zod.array(ListAdminUsersResponseItem)
+
+
+/**
+ * @summary Update user role and club assignment (super_admin only)
+ */
+export const UpdateAdminUserParams = zod.object({
+  "userId": zod.coerce.number()
+})
+
+export const UpdateAdminUserBody = zod.object({
+  "role": zod.enum(['super_admin', 'club_admin', 'coach', 'athlete', 'parent']).optional(),
+  "clubId": zod.number().nullish()
+})
+
+export const UpdateAdminUserResponse = zod.object({
+  "id": zod.number(),
+  "clerkId": zod.string(),
+  "email": zod.string(),
+  "firstName": zod.string().nullish(),
+  "lastName": zod.string().nullish(),
+  "role": zod.enum(['super_admin', 'club_admin', 'coach', 'athlete', 'parent']),
+  "clubId": zod.number().nullish(),
+  "clubName": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+
+
+/**
  * @summary List all clubs
  */
 export const ListClubsResponseItem = zod.object({
@@ -390,6 +432,46 @@ export const GetAthleteFightsResponseItem = zod.object({
   "finishedAt": zod.string().nullish()
 })
 export const GetAthleteFightsResponse = zod.array(GetAthleteFightsResponseItem)
+
+
+/**
+ * @summary List weight log history for an athlete
+ */
+export const ListWeightLogsParams = zod.object({
+  "athleteId": zod.coerce.number()
+})
+
+export const ListWeightLogsResponseItem = zod.object({
+  "id": zod.number(),
+  "athleteId": zod.number(),
+  "weightKg": zod.number(),
+  "note": zod.string().nullish(),
+  "recordedAt": zod.string()
+})
+export const ListWeightLogsResponse = zod.array(ListWeightLogsResponseItem)
+
+
+/**
+ * @summary Add a weight log entry for an athlete
+ */
+export const AddWeightLogParams = zod.object({
+  "athleteId": zod.coerce.number()
+})
+
+export const AddWeightLogBody = zod.object({
+  "weightKg": zod.number(),
+  "note": zod.string().optional(),
+  "recordedAt": zod.string().optional()
+})
+
+
+/**
+ * @summary Delete a weight log entry
+ */
+export const DeleteWeightLogParams = zod.object({
+  "athleteId": zod.coerce.number(),
+  "logId": zod.coerce.number()
+})
 
 
 /**

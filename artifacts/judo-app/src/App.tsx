@@ -18,6 +18,7 @@ import CompetitionsPage from "./pages/competitions";
 import CompetitionDetailPage from "./pages/competition-detail";
 import PaymentsPage from "./pages/payments";
 import FightPage from "./pages/fight";
+import AdminPage from "./pages/admin";
 import NotFoundPage from "./pages/not-found";
 
 const clerkPubKey = publishableKeyFromHost(
@@ -166,6 +167,7 @@ function ClerkProviderWithRoutes() {
           <Route path="/competitions/:competitionId" component={CompetitionDetailPage} />
           <Route path="/competitions/:competitionId/fight/:fightId" component={FightPage} />
           <Route path="/payments" component={PaymentsPage} />
+          <Route path="/admin" component={AdminPage} />
           <Route component={NotFoundPage} />
         </Switch>
       </QueryClientProvider>
