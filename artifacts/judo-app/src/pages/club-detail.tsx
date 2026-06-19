@@ -21,7 +21,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, Trophy, CreditCard, ArrowLeft, UserCog, MapPin, GraduationCap, User, UserPlus, Trash2 } from "lucide-react";
+import { Users, Trophy, CreditCard, ArrowLeft, UserCog, MapPin, GraduationCap, User, UserPlus, Trash2, Plus } from "lucide-react";
 
 export default function ClubDetailPage() {
   const { t } = useTranslation();
