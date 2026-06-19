@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetAthlete, useGetAthleteStats, useGetAthleteFights, useGetAthletePayments,
-  useListWeightLogs, useAddWeightLog, useDeleteWeightLog,
+  useListWeightLogs, useAddWeightLog, useDeleteWeightLog, useUpdateAthlete,
 } from "@workspace/api-client-react";
 import { getGetAthleteQueryKey, getGetAthleteStatsQueryKey, getListWeightLogsQueryKey } from "@workspace/api-client-react";
 import Layout from "@/components/layout";
@@ -12,9 +12,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Trophy, Swords, Plus, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowLeft, Trophy, Swords, Plus, Trash2, Pencil } from "lucide-react";
+
+const BELTS = ["Белый", "Жёлтый", "Оранжевый", "Зелёный", "Синий", "Коричневый", "Чёрный"];
 
 function beltColor(belt?: string | null) {
   const colors: Record<string, string> = {
@@ -90,10 +95,65 @@ export default function AthleteDetailPage() {
 
   const addWeightLog = useAddWeightLog();
   const deleteWeightLog = useDeleteWeightLog();
+  const updateAthlete = useUpdateAthlete();
 
   const [newWeight, setNewWeight] = useState("");
   const [newWeightDate, setNewWeightDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [newWeightNote, setNewWeightNote] = useState("");
+
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    firstName: "", lastName: "", gender: "male", birthDate: "",
+    weightKg: "", belt: "",
+    phones: [] as string[],
+    parentName: "", parentPhones: [] as string[], notes: "",
+  });
+
+  const openEdit = () => {
+    if (!athlete) return;
+    setEditForm({
+      firstName: athlete.firstName,
+      lastName: athlete.lastName,
+      gender: athlete.gender,
+      birthDate: athlete.birthDate ? athlete.birthDate.slice(0, 10) : "",
+      weightKg: athlete.weightKg ? String(athlete.weightKg) : "",
+      belt: athlete.belt ?? "",
+      phones: athlete.phone ? athlete.phone.split(", ").filter(Boolean) : [],
+      parentName: athlete.parentName ?? "",
+      parentPhones: athlete.parentPhone ? athlete.parentPhone.split(", ").filter(Boolean) : [],
+      notes: athlete.notes ?? "",
+    });
+    setEditOpen(true);
+  };
+
+  const handleEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const phonesJoined = editForm.phones.filter(Boolean).join(", ");
+    const parentPhonesJoined = editForm.parentPhones.filter(Boolean).join(", ");
+    updateAthlete.mutate(
+      {
+        athleteId: id,
+        data: {
+          firstName: editForm.firstName,
+          lastName: editForm.lastName,
+          gender: editForm.gender as "male" | "female",
+          birthDate: editForm.birthDate || undefined,
+          weightKg: editForm.weightKg ? parseFloat(editForm.weightKg) : undefined,
+          belt: editForm.belt || undefined,
+          phone: phonesJoined || undefined,
+          parentName: editForm.parentName || undefined,
+          parentPhone: parentPhonesJoined || undefined,
+          notes: editForm.notes || undefined,
+        }
+      },
+      {
+        onSuccess: () => {
+          qc.invalidateQueries({ queryKey: getGetAthleteQueryKey(id) });
+          setEditOpen(false);
+        }
+      }
+    );
+  };
 
   const handleAddWeight = () => {
     const kg = parseFloat(newWeight);
@@ -178,7 +238,110 @@ export default function AthleteDetailPage() {
               {athlete.weightKg && ` · ${athlete.weightKg} кг`}
             </p>
           </div>
+          <Button variant="outline" size="sm" onClick={openEdit} className="gap-2">
+            <Pencil className="h-4 w-4" />
+            Редактировать
+          </Button>
         </div>
+
+        {/* Edit Dialog */}
+        <Dialog open={editOpen} onOpenChange={setEditOpen}>
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Редактировать спортсмена</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleEdit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{t("FirstName")} *</Label>
+                  <Input value={editForm.firstName} onChange={e => setEditForm(f => ({ ...f, firstName: e.target.value }))} required />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t("LastName")} *</Label>
+                  <Input value={editForm.lastName} onChange={e => setEditForm(f => ({ ...f, lastName: e.target.value }))} required />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{t("Gender")} *</Label>
+                  <Select value={editForm.gender} onValueChange={v => setEditForm(f => ({ ...f, gender: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="male">{t("Male")}</SelectItem>
+                      <SelectItem value="female">{t("Female")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>{t("BirthDate")}</Label>
+                  <Input type="date" value={editForm.birthDate} onChange={e => setEditForm(f => ({ ...f, birthDate: e.target.value }))} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{t("Weight")}</Label>
+                  <Input type="number" step="0.1" value={editForm.weightKg} onChange={e => setEditForm(f => ({ ...f, weightKg: e.target.value }))} />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t("Belt")}</Label>
+                  <Select value={editForm.belt} onValueChange={v => setEditForm(f => ({ ...f, belt: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Выберите пояс" /></SelectTrigger>
+                    <SelectContent>
+                      {BELTS.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="rounded-lg border p-3 space-y-3 bg-muted/20">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Контактные данные</p>
+
+                <div className="space-y-1">
+                  <Label className="text-xs">Телефоны спортсмена</Label>
+                  {editForm.phones.map((ph, i) => (
+                    <div key={i} className="flex gap-2">
+                      <Input placeholder="+7..." value={ph} onChange={e => setEditForm(f => { const phones = [...f.phones]; phones[i] = e.target.value; return { ...f, phones }; })} className="flex-1" />
+                      <button type="button" onClick={() => setEditForm(f => ({ ...f, phones: f.phones.filter((_, j) => j !== i) }))} className="text-muted-foreground hover:text-destructive px-1">✕</button>
+                    </div>
+                  ))}
+                  <button type="button" onClick={() => setEditForm(f => ({ ...f, phones: [...f.phones, ""] }))} className="text-xs text-primary hover:underline flex items-center gap-1 mt-1">
+                    <Plus className="h-3 w-3" /> Добавить телефон спортсмена
+                  </button>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs">Имя родителя / представителя</Label>
+                  <Input placeholder="Иванов Иван Иванович" value={editForm.parentName} onChange={e => setEditForm(f => ({ ...f, parentName: e.target.value }))} />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs">Телефоны родителя / представителя</Label>
+                  {editForm.parentPhones.map((ph, i) => (
+                    <div key={i} className="flex gap-2">
+                      <Input placeholder="+7..." value={ph} onChange={e => setEditForm(f => { const parentPhones = [...f.parentPhones]; parentPhones[i] = e.target.value; return { ...f, parentPhones }; })} className="flex-1" />
+                      <button type="button" onClick={() => setEditForm(f => ({ ...f, parentPhones: f.parentPhones.filter((_, j) => j !== i) }))} className="text-muted-foreground hover:text-destructive px-1">✕</button>
+                    </div>
+                  ))}
+                  <button type="button" onClick={() => setEditForm(f => ({ ...f, parentPhones: [...f.parentPhones, ""] }))} className="text-xs text-primary hover:underline flex items-center gap-1 mt-1">
+                    <Plus className="h-3 w-3" /> Добавить телефон представителя
+                  </button>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs">Заметки</Label>
+                  <Input placeholder="Дополнительная информация..." value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={() => setEditOpen(false)}>{t("Cancel")}</Button>
+                <Button type="submit" disabled={updateAthlete.isPending}>
+                  {updateAthlete.isPending ? "Сохранение..." : t("Save")}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
 
         <div className="grid gap-4 md:grid-cols-4">
           <Card>
@@ -372,32 +535,44 @@ export default function AthleteDetailPage() {
           <TabsContent value="info" className="mt-4">
             <Card>
               <CardContent className="pt-6">
-                <dl className="grid grid-cols-2 gap-4 text-sm">
-                  {athlete.phone && (
-                    <>
-                      <dt className="text-muted-foreground">{t("Phone")}</dt>
-                      <dd className="font-medium">{athlete.phone}</dd>
-                    </>
-                  )}
-                  {athlete.parentName && (
-                    <>
-                      <dt className="text-muted-foreground">{t("ParentName")}</dt>
-                      <dd className="font-medium">{athlete.parentName}</dd>
-                    </>
-                  )}
-                  {athlete.parentPhone && (
-                    <>
-                      <dt className="text-muted-foreground">{t("ParentPhone")}</dt>
-                      <dd className="font-medium">{athlete.parentPhone}</dd>
-                    </>
-                  )}
-                  {athlete.notes && (
-                    <>
-                      <dt className="text-muted-foreground">{t("Notes")}</dt>
-                      <dd className="font-medium">{athlete.notes}</dd>
-                    </>
-                  )}
-                </dl>
+                {!athlete.phone && !athlete.parentName && !athlete.parentPhone && !athlete.notes ? (
+                  <p className="text-sm text-muted-foreground">Контактные данные не заполнены.</p>
+                ) : (
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                    {athlete.phone && (
+                      <>
+                        <dt className="text-muted-foreground">{t("Phone")}</dt>
+                        <dd className="font-medium">
+                          {athlete.phone.split(", ").map((ph, i) => (
+                            <div key={i}>{ph}</div>
+                          ))}
+                        </dd>
+                      </>
+                    )}
+                    {athlete.parentName && (
+                      <>
+                        <dt className="text-muted-foreground">{t("ParentName")}</dt>
+                        <dd className="font-medium">{athlete.parentName}</dd>
+                      </>
+                    )}
+                    {athlete.parentPhone && (
+                      <>
+                        <dt className="text-muted-foreground">{t("ParentPhone")}</dt>
+                        <dd className="font-medium">
+                          {athlete.parentPhone.split(", ").map((ph, i) => (
+                            <div key={i}>{ph}</div>
+                          ))}
+                        </dd>
+                      </>
+                    )}
+                    {athlete.notes && (
+                      <>
+                        <dt className="text-muted-foreground">{t("Notes")}</dt>
+                        <dd className="font-medium">{athlete.notes}</dd>
+                      </>
+                    )}
+                  </dl>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

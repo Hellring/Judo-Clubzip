@@ -64,15 +64,19 @@ export default function AthletesPage() {
   const [search, setSearch] = useState("");
   const [genderFilter, setGenderFilter] = useState("all");
   const [open, setOpen] = useState(false);
-  const [showContacts, setShowContacts] = useState(false);
-  const [form, setForm] = useState({
+  const emptyForm = () => ({
     firstName: "", lastName: "", gender: "male", birthDate: "",
-    weightKg: "", belt: "", phone: "", parentName: "", parentPhone: "", notes: ""
+    weightKg: "", belt: "",
+    phones: [] as string[],
+    parentName: "", parentPhones: [] as string[], notes: ""
   });
+  const [form, setForm] = useState(emptyForm);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!effectiveClubId) return;
+    const phonesJoined = form.phones.filter(Boolean).join(", ");
+    const parentPhonesJoined = form.parentPhones.filter(Boolean).join(", ");
     createAthlete.mutate(
       {
         data: {
@@ -83,9 +87,9 @@ export default function AthletesPage() {
           birthDate: form.birthDate || undefined,
           weightKg: form.weightKg ? parseFloat(form.weightKg) : undefined,
           belt: form.belt || undefined,
-          phone: form.phone || undefined,
+          phone: phonesJoined || undefined,
           parentName: form.parentName || undefined,
-          parentPhone: form.parentPhone || undefined,
+          parentPhone: parentPhonesJoined || undefined,
           notes: form.notes || undefined,
         }
       },
@@ -93,8 +97,7 @@ export default function AthletesPage() {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListAthletesQueryKey() });
           setOpen(false);
-          setShowContacts(false);
-          setForm({ firstName: "", lastName: "", gender: "male", birthDate: "", weightKg: "", belt: "", phone: "", parentName: "", parentPhone: "", notes: "" });
+          setForm(emptyForm());
         }
       }
     );
@@ -192,38 +195,45 @@ export default function AthletesPage() {
                     </Select>
                   </div>
                 </div>
-                {!showContacts ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowContacts(true)}
-                    className="text-sm text-primary hover:underline flex items-center gap-1"
-                  >
-                    <Plus className="h-3 w-3" /> Добавить контактные данные
-                  </button>
-                ) : (
-                  <div className="rounded-lg border p-3 space-y-3 bg-muted/20">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Контактные данные</p>
-                      <button type="button" onClick={() => { setShowContacts(false); setForm(f => ({ ...f, phone: "", parentName: "", parentPhone: "", notes: "" })); }} className="text-xs text-muted-foreground hover:text-destructive">✕ Убрать</button>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Телефон спортсмена</Label>
-                      <Input placeholder="+7..." data-testid="input-phone" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Имя родителя / представителя</Label>
-                      <Input placeholder="Иванов Иван Иванович" data-testid="input-parent-name" value={form.parentName} onChange={e => setForm(f => ({ ...f, parentName: e.target.value }))} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Телефон родителя / представителя</Label>
-                      <Input placeholder="+7..." data-testid="input-parent-phone" value={form.parentPhone} onChange={e => setForm(f => ({ ...f, parentPhone: e.target.value }))} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Заметки</Label>
-                      <Input placeholder="Дополнительная информация..." value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
-                    </div>
+                <div className="rounded-lg border p-3 space-y-3 bg-muted/20">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Контактные данные</p>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs">Телефоны спортсмена</Label>
+                    {form.phones.map((ph, i) => (
+                      <div key={i} className="flex gap-2">
+                        <Input placeholder="+7..." value={ph} onChange={e => setForm(f => { const phones = [...f.phones]; phones[i] = e.target.value; return { ...f, phones }; })} className="flex-1" />
+                        <button type="button" onClick={() => setForm(f => ({ ...f, phones: f.phones.filter((_, j) => j !== i) }))} className="text-muted-foreground hover:text-destructive px-1">✕</button>
+                      </div>
+                    ))}
+                    <button type="button" onClick={() => setForm(f => ({ ...f, phones: [...f.phones, ""] }))} className="text-xs text-primary hover:underline flex items-center gap-1 mt-1">
+                      <Plus className="h-3 w-3" /> Добавить телефон спортсмена
+                    </button>
                   </div>
-                )}
+
+                  <div className="space-y-1">
+                    <Label className="text-xs">Имя родителя / представителя</Label>
+                    <Input placeholder="Иванов Иван Иванович" data-testid="input-parent-name" value={form.parentName} onChange={e => setForm(f => ({ ...f, parentName: e.target.value }))} />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs">Телефоны родителя / представителя</Label>
+                    {form.parentPhones.map((ph, i) => (
+                      <div key={i} className="flex gap-2">
+                        <Input placeholder="+7..." value={ph} onChange={e => setForm(f => { const parentPhones = [...f.parentPhones]; parentPhones[i] = e.target.value; return { ...f, parentPhones }; })} className="flex-1" />
+                        <button type="button" onClick={() => setForm(f => ({ ...f, parentPhones: f.parentPhones.filter((_, j) => j !== i) }))} className="text-muted-foreground hover:text-destructive px-1">✕</button>
+                      </div>
+                    ))}
+                    <button type="button" onClick={() => setForm(f => ({ ...f, parentPhones: [...f.parentPhones, ""] }))} className="text-xs text-primary hover:underline flex items-center gap-1 mt-1">
+                      <Plus className="h-3 w-3" /> Добавить телефон представителя
+                    </button>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs">Заметки</Label>
+                    <Input placeholder="Дополнительная информация..." value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
+                  </div>
+                </div>
                 <div className="flex justify-end gap-2">
                   <Button type="button" variant="outline" onClick={() => setOpen(false)}>{t("Cancel")}</Button>
                   <Button type="submit" data-testid="button-submit-athlete" disabled={createAthlete.isPending}>{t("Save")}</Button>
