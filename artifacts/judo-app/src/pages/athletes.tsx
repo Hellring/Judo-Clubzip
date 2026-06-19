@@ -7,6 +7,7 @@ import {
   useCreateAthlete,
   useDeleteAthlete,
   useGetMe,
+  useListClubs,
   getListAthletesQueryKey,
 } from "@workspace/api-client-react";
 import Layout from "@/components/layout";
@@ -49,8 +50,13 @@ export default function AthletesPage() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const { data: user } = useGetMe();
+  const isSuperAdmin = user?.role === "super_admin";
+  const { data: clubs = [] } = useListClubs({ query: { enabled: isSuperAdmin } });
+  const [selectedClubId, setSelectedClubId] = useState<number | undefined>();
+  const effectiveClubId = user?.clubId ?? selectedClubId;
+
   const { data: athletes = [], isLoading } = useListAthletes(
-    user?.clubId ? { clubId: user.clubId } : {}
+    effectiveClubId ? { clubId: effectiveClubId } : {}
   );
   const createAthlete = useCreateAthlete();
   const deleteAthlete = useDeleteAthlete();
@@ -65,11 +71,11 @@ export default function AthletesPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user?.clubId) return;
+    if (!effectiveClubId) return;
     createAthlete.mutate(
       {
         data: {
-          clubId: user.clubId,
+          clubId: effectiveClubId,
           firstName: form.firstName,
           lastName: form.lastName,
           gender: form.gender as "male" | "female",
@@ -132,6 +138,17 @@ export default function AthletesPage() {
                 <DialogTitle>{t("AddAthlete")}</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
+                {isSuperAdmin && (
+                  <div className="space-y-2">
+                    <Label>Клуб *</Label>
+                    <Select value={selectedClubId ? String(selectedClubId) : ""} onValueChange={v => setSelectedClubId(Number(v))}>
+                      <SelectTrigger><SelectValue placeholder="Выберите клуб" /></SelectTrigger>
+                      <SelectContent>
+                        {clubs.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>{t("FirstName")} *</Label>
