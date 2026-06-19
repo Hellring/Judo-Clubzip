@@ -70,6 +70,19 @@ export const ListAdminUsersResponse = zod.array(ListAdminUsersResponseItem)
 
 
 /**
+ * @summary Create user directly without email confirmation (super_admin only)
+ */
+export const CreateAdminUserBody = zod.object({
+  "email": zod.string(),
+  "password": zod.string(),
+  "firstName": zod.string().optional(),
+  "lastName": zod.string().optional(),
+  "role": zod.enum(['super_admin', 'club_admin', 'coach', 'athlete', 'parent']).optional(),
+  "clubId": zod.number().nullish()
+})
+
+
+/**
  * @summary Send email invitation (super_admin only)
  */
 export const CreateInvitationBody = zod.object({

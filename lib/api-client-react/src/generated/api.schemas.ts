@@ -654,6 +654,27 @@ export interface UserAdminUpdate {
   clubId?: number | null;
 }
 
+export type CreateUserInputRole = typeof CreateUserInputRole[keyof typeof CreateUserInputRole];
+
+
+export const CreateUserInputRole = {
+  super_admin: 'super_admin',
+  club_admin: 'club_admin',
+  coach: 'coach',
+  athlete: 'athlete',
+  parent: 'parent',
+} as const;
+
+export interface CreateUserInput {
+  email: string;
+  password: string;
+  firstName?: string;
+  lastName?: string;
+  role?: CreateUserInputRole;
+  /** @nullable */
+  clubId?: number | null;
+}
+
 export interface WeightLog {
   id: number;
   athleteId: number;
@@ -693,6 +714,10 @@ export interface InvitationResult {
   success: boolean;
   message: string;
 }
+
+export type CreateAdminUser400 = {
+  error?: string;
+};
 
 export type ListAthletesParams = {
 clubId?: number;

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useListAdminUsers, useUpdateAdminUser, useListClubs, useCreateInvitation } from "@workspace/api-client-react";
+import { useListAdminUsers, useUpdateAdminUser, useListClubs, useCreateInvitation, useCreateAdminUser } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import Layout from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Shield, CheckCircle, Mail, Send } from "lucide-react";
+import { Shield, CheckCircle, Mail, Send, UserPlus } from "lucide-react";
 
 const ROLES = ["super_admin", "club_admin", "coach", "athlete", "parent"] as const;
 type Role = typeof ROLES[number];
@@ -102,6 +102,115 @@ function UserRow({ user, clubs, onSave, saving, saved }: UserRowProps) {
   );
 }
 
+function CreateUserSection({ clubs }: { clubs: { id: number; name: string }[] }) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const createUser = useCreateAdminUser();
+  const [form, setForm] = useState({
+    email: "", password: "", firstName: "", lastName: "",
+    role: "coach" as Role, clubId: "none",
+  });
+  const [result, setResult] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setResult(null);
+    createUser.mutate(
+      {
+        data: {
+          email: form.email.trim(),
+          password: form.password,
+          firstName: form.firstName || undefined,
+          lastName: form.lastName || undefined,
+          role: form.role,
+          clubId: form.clubId !== "none" ? parseInt(form.clubId) : null,
+        }
+      },
+      {
+        onSuccess: () => {
+          setResult({ type: "success", message: `Пользователь ${form.email} создан.` });
+          setForm({ email: "", password: "", firstName: "", lastName: "", role: "coach", clubId: "none" });
+          queryClient.invalidateQueries({ queryKey: ["listAdminUsers"] });
+        },
+        onError: (err: any) => {
+          const msg = err?.response?.data?.error ?? "Не удалось создать пользователя.";
+          setResult({ type: "error", message: msg });
+        },
+      }
+    );
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <UserPlus className="h-4 w-4" />
+          Создать пользователя (без подтверждения почты)
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Имя</Label>
+              <Input placeholder="Иван" value={form.firstName} onChange={e => setForm(f => ({ ...f, firstName: e.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Фамилия</Label>
+              <Input placeholder="Иванов" value={form.lastName} onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Email *</Label>
+              <Input type="email" placeholder="user@example.com" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
+            </div>
+            <div className="space-y-2">
+              <Label>Пароль *</Label>
+              <Input type="password" placeholder="Минимум 8 символов" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} required />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Роль</Label>
+              <Select value={form.role} onValueChange={v => setForm(f => ({ ...f, role: v as Role }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {ROLES.map(r => <SelectItem key={r} value={r}>{t(r as any)}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Клуб</Label>
+              <Select value={form.clubId} onValueChange={v => setForm(f => ({ ...f, clubId: v }))}>
+                <SelectTrigger><SelectValue placeholder={t("NoClub")} /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">{t("NoClub")}</SelectItem>
+                  {clubs.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button type="submit" disabled={createUser.isPending || !form.email || !form.password}>
+              <UserPlus className="h-4 w-4 mr-2" />
+              {createUser.isPending ? "Создание..." : "Создать пользователя"}
+            </Button>
+          </div>
+          {result && (
+            <p className={`text-sm ${result.type === "success" ? "text-green-600" : "text-destructive"}`}>
+              {result.type === "success" ? "✓ " : "✗ "}{result.message}
+            </p>
+          )}
+          <p className="text-xs text-muted-foreground">
+            Пользователь сразу получит доступ — подтверждение почты не требуется.
+          </p>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
 function InviteSection() {
   const [email, setEmail] = useState("");
   const [result, setResult] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -166,7 +275,8 @@ function InviteSection() {
 export default function AdminPage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
-  const { data: users = [], isLoading } = useListAdminUsers();
+  const { data: usersRaw, isLoading } = useListAdminUsers();
+  const users = (Array.isArray(usersRaw) ? usersRaw : []) as NonNullable<typeof usersRaw>;
   const { data: clubs = [] } = useListClubs();
   const updateUser = useUpdateAdminUser();
   const [savedIds, setSavedIds] = useState<Set<number>>(new Set());
@@ -182,7 +292,7 @@ export default function AdminPage() {
             next.delete(userId);
             return next;
           }), 2000);
-          queryClient.invalidateQueries({ queryKey: ["listAdminUsers"] });
+          queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
         }
       }
     );
@@ -198,6 +308,8 @@ export default function AdminPage() {
             <p className="text-muted-foreground text-sm">{t("UserManagement")}</p>
           </div>
         </div>
+
+        <CreateUserSection clubs={clubs as { id: number; name: string }[]} />
 
         <InviteSection />
 
