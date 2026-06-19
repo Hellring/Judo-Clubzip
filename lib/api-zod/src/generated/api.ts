@@ -70,6 +70,14 @@ export const ListAdminUsersResponse = zod.array(ListAdminUsersResponseItem)
 
 
 /**
+ * @summary Send email invitation (super_admin only)
+ */
+export const CreateInvitationBody = zod.object({
+  "emailAddress": zod.string()
+})
+
+
+/**
  * @summary Update user role and club assignment (super_admin only)
  */
 export const UpdateAdminUserParams = zod.object({
@@ -180,6 +188,52 @@ export const DeleteClubParams = zod.object({
 
 
 /**
+ * @summary List athletes of a club
+ */
+export const ListClubAthletesParams = zod.object({
+  "clubId": zod.coerce.number()
+})
+
+export const ListClubAthletesResponseItem = zod.object({
+  "id": zod.number(),
+  "clubId": zod.number(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "birthDate": zod.string().nullish(),
+  "gender": zod.enum(['male', 'female']),
+  "weightKg": zod.number().nullish(),
+  "belt": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "parentName": zod.string().nullish(),
+  "parentPhone": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+export const ListClubAthletesResponse = zod.array(ListClubAthletesResponseItem)
+
+
+/**
+ * @summary List coaches/admins of a club
+ */
+export const ListClubCoachesParams = zod.object({
+  "clubId": zod.coerce.number()
+})
+
+export const ListClubCoachesResponseItem = zod.object({
+  "id": zod.number(),
+  "clerkId": zod.string(),
+  "email": zod.string(),
+  "firstName": zod.string().nullish(),
+  "lastName": zod.string().nullish(),
+  "role": zod.enum(['super_admin', 'club_admin', 'coach', 'athlete', 'parent']),
+  "clubId": zod.number().nullish(),
+  "clubName": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+export const ListClubCoachesResponse = zod.array(ListClubCoachesResponseItem)
+
+
+/**
  * @summary Get club statistics
  */
 export const GetClubStatsParams = zod.object({
@@ -200,6 +254,8 @@ export const GetClubStatsResponse = zod.object({
   "clubId": zod.number(),
   "name": zod.string(),
   "location": zod.string().nullish(),
+  "lat": zod.number().nullish(),
+  "lng": zod.number().nullish(),
   "date": zod.string(),
   "format": zod.enum(['olympic', 'round_robin']),
   "fightDurationSeconds": zod.number(),
@@ -651,6 +707,8 @@ export const ListCompetitionsResponseItem = zod.object({
   "clubId": zod.number(),
   "name": zod.string(),
   "location": zod.string().nullish(),
+  "lat": zod.number().nullish(),
+  "lng": zod.number().nullish(),
   "date": zod.string(),
   "format": zod.enum(['olympic', 'round_robin']),
   "fightDurationSeconds": zod.number(),
@@ -668,6 +726,8 @@ export const CreateCompetitionBody = zod.object({
   "clubId": zod.number(),
   "name": zod.string(),
   "location": zod.string().optional(),
+  "lat": zod.number().optional(),
+  "lng": zod.number().optional(),
   "date": zod.string(),
   "format": zod.enum(['olympic', 'round_robin']),
   "fightDurationSeconds": zod.number().optional()
@@ -698,6 +758,8 @@ export const GetCompetitionResponse = zod.object({
   "name": zod.string(),
   "gender": zod.enum(['male', 'female', 'mixed']),
   "maxWeightKg": zod.number().nullish(),
+  "durationSeconds": zod.number().nullish(),
+  "wazaAriForIppon": zod.number(),
   "participantCount": zod.number()
 }))
 })
@@ -724,6 +786,8 @@ export const UpdateCompetitionResponse = zod.object({
   "clubId": zod.number(),
   "name": zod.string(),
   "location": zod.string().nullish(),
+  "lat": zod.number().nullish(),
+  "lng": zod.number().nullish(),
   "date": zod.string(),
   "format": zod.enum(['olympic', 'round_robin']),
   "fightDurationSeconds": zod.number(),
@@ -754,6 +818,8 @@ export const ListWeightCategoriesResponseItem = zod.object({
   "name": zod.string(),
   "gender": zod.enum(['male', 'female', 'mixed']),
   "maxWeightKg": zod.number().nullish(),
+  "durationSeconds": zod.number().nullish(),
+  "wazaAriForIppon": zod.number(),
   "participantCount": zod.number()
 })
 export const ListWeightCategoriesResponse = zod.array(ListWeightCategoriesResponseItem)
@@ -769,7 +835,34 @@ export const CreateWeightCategoryParams = zod.object({
 export const CreateWeightCategoryBody = zod.object({
   "name": zod.string(),
   "gender": zod.enum(['male', 'female', 'mixed']),
-  "maxWeightKg": zod.number().optional()
+  "maxWeightKg": zod.number().optional(),
+  "durationSeconds": zod.number().optional(),
+  "wazaAriForIppon": zod.number().optional()
+})
+
+
+/**
+ * @summary Update weight category settings (timer, waza-ari threshold)
+ */
+export const UpdateWeightCategoryParams = zod.object({
+  "competitionId": zod.coerce.number(),
+  "categoryId": zod.coerce.number()
+})
+
+export const UpdateWeightCategoryBody = zod.object({
+  "durationSeconds": zod.number().nullish(),
+  "wazaAriForIppon": zod.number().optional()
+})
+
+export const UpdateWeightCategoryResponse = zod.object({
+  "id": zod.number(),
+  "competitionId": zod.number(),
+  "name": zod.string(),
+  "gender": zod.enum(['male', 'female', 'mixed']),
+  "maxWeightKg": zod.number().nullish(),
+  "durationSeconds": zod.number().nullish(),
+  "wazaAriForIppon": zod.number(),
+  "participantCount": zod.number()
 })
 
 

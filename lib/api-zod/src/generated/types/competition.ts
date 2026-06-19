@@ -14,6 +14,10 @@ export interface Competition {
   name: string;
   /** @nullable */
   location?: string | null;
+  /** @nullable */
+  lat?: number | null;
+  /** @nullable */
+  lng?: number | null;
   date: string;
   format: CompetitionFormat;
   fightDurationSeconds: number;

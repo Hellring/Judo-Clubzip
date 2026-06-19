@@ -11,6 +11,8 @@ export interface CompetitionInput {
   clubId: number;
   name: string;
   location?: string;
+  lat?: number;
+  lng?: number;
   date: string;
   format: CompetitionInputFormat;
   fightDurationSeconds?: number;

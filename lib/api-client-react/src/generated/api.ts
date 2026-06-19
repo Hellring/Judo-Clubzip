@@ -43,6 +43,8 @@ import type {
   FinishFightInput,
   GenerateBracketInput,
   HealthStatus,
+  InvitationInput,
+  InvitationResult,
   ListAthletesParams,
   ListCompetitionsParams,
   ListPaymentsParams,
@@ -58,6 +60,7 @@ import type {
   UserUpdate,
   WeightCategory,
   WeightCategoryInput,
+  WeightCategoryUpdate,
   WeightLog,
   WeightLogInput
 } from './api.schemas';
@@ -375,6 +378,77 @@ export function useListAdminUsers<TData = Awaited<ReturnType<typeof listAdminUse
 
 
 
+
+export const getCreateInvitationUrl = () => {
+
+
+
+
+  return `/api/admin/invitations`
+}
+
+/**
+ * @summary Send email invitation (super_admin only)
+ */
+export const createInvitation = async (invitationInput: InvitationInput, options?: RequestInit): Promise<InvitationResult> => {
+
+  return customFetch<InvitationResult>(getCreateInvitationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      invitationInput,)
+  }
+);}
+
+
+
+
+export const getCreateInvitationMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createInvitation>>, TError,{data: BodyType<InvitationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createInvitation>>, TError,{data: BodyType<InvitationInput>}, TContext> => {
+
+const mutationKey = ['createInvitation'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createInvitation>>, {data: BodyType<InvitationInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createInvitation(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateInvitationMutationResult = NonNullable<Awaited<ReturnType<typeof createInvitation>>>
+    export type CreateInvitationMutationBody = BodyType<InvitationInput>
+    export type CreateInvitationMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Send email invitation (super_admin only)
+ */
+export const useCreateInvitation = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createInvitation>>, TError,{data: BodyType<InvitationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createInvitation>>,
+        TError,
+        {data: BodyType<InvitationInput>},
+        TContext
+      > => {
+      return useMutation(getCreateInvitationMutationOptions(options));
+    }
 
 export const getUpdateAdminUserUrl = (userId: number,) => {
 
@@ -814,6 +888,160 @@ export const useDeleteClub = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getDeleteClubMutationOptions(options));
     }
+
+export const getListClubAthletesUrl = (clubId: number,) => {
+
+
+
+
+  return `/api/clubs/${clubId}/athletes`
+}
+
+/**
+ * @summary List athletes of a club
+ */
+export const listClubAthletes = async (clubId: number, options?: RequestInit): Promise<Athlete[]> => {
+
+  return customFetch<Athlete[]>(getListClubAthletesUrl(clubId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListClubAthletesQueryKey = (clubId: number,) => {
+    return [
+    `/api/clubs/${clubId}/athletes`
+    ] as const;
+    }
+
+
+export const getListClubAthletesQueryOptions = <TData = Awaited<ReturnType<typeof listClubAthletes>>, TError = ErrorType<unknown>>(clubId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listClubAthletes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListClubAthletesQueryKey(clubId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listClubAthletes>>> = ({ signal }) => listClubAthletes(clubId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(clubId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listClubAthletes>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListClubAthletesQueryResult = NonNullable<Awaited<ReturnType<typeof listClubAthletes>>>
+export type ListClubAthletesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List athletes of a club
+ */
+
+export function useListClubAthletes<TData = Awaited<ReturnType<typeof listClubAthletes>>, TError = ErrorType<unknown>>(
+ clubId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listClubAthletes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListClubAthletesQueryOptions(clubId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListClubCoachesUrl = (clubId: number,) => {
+
+
+
+
+  return `/api/clubs/${clubId}/coaches`
+}
+
+/**
+ * @summary List coaches/admins of a club
+ */
+export const listClubCoaches = async (clubId: number, options?: RequestInit): Promise<UserAdmin[]> => {
+
+  return customFetch<UserAdmin[]>(getListClubCoachesUrl(clubId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListClubCoachesQueryKey = (clubId: number,) => {
+    return [
+    `/api/clubs/${clubId}/coaches`
+    ] as const;
+    }
+
+
+export const getListClubCoachesQueryOptions = <TData = Awaited<ReturnType<typeof listClubCoaches>>, TError = ErrorType<unknown>>(clubId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listClubCoaches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListClubCoachesQueryKey(clubId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listClubCoaches>>> = ({ signal }) => listClubCoaches(clubId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(clubId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listClubCoaches>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListClubCoachesQueryResult = NonNullable<Awaited<ReturnType<typeof listClubCoaches>>>
+export type ListClubCoachesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List coaches/admins of a club
+ */
+
+export function useListClubCoaches<TData = Awaited<ReturnType<typeof listClubCoaches>>, TError = ErrorType<unknown>>(
+ clubId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listClubCoaches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListClubCoachesQueryOptions(clubId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getGetClubStatsUrl = (clubId: number,) => {
 
@@ -2834,6 +3062,80 @@ export const useCreateWeightCategory = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreateWeightCategoryMutationOptions(options));
+    }
+
+export const getUpdateWeightCategoryUrl = (competitionId: number,
+    categoryId: number,) => {
+
+
+
+
+  return `/api/competitions/${competitionId}/categories/${categoryId}`
+}
+
+/**
+ * @summary Update weight category settings (timer, waza-ari threshold)
+ */
+export const updateWeightCategory = async (competitionId: number,
+    categoryId: number,
+    weightCategoryUpdate: WeightCategoryUpdate, options?: RequestInit): Promise<WeightCategory> => {
+
+  return customFetch<WeightCategory>(getUpdateWeightCategoryUrl(competitionId,categoryId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      weightCategoryUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateWeightCategoryMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateWeightCategory>>, TError,{competitionId: number;categoryId: number;data: BodyType<WeightCategoryUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateWeightCategory>>, TError,{competitionId: number;categoryId: number;data: BodyType<WeightCategoryUpdate>}, TContext> => {
+
+const mutationKey = ['updateWeightCategory'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateWeightCategory>>, {competitionId: number;categoryId: number;data: BodyType<WeightCategoryUpdate>}> = (props) => {
+          const {competitionId,categoryId,data} = props ?? {};
+
+          return  updateWeightCategory(competitionId,categoryId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateWeightCategoryMutationResult = NonNullable<Awaited<ReturnType<typeof updateWeightCategory>>>
+    export type UpdateWeightCategoryMutationBody = BodyType<WeightCategoryUpdate>
+    export type UpdateWeightCategoryMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update weight category settings (timer, waza-ari threshold)
+ */
+export const useUpdateWeightCategory = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateWeightCategory>>, TError,{competitionId: number;categoryId: number;data: BodyType<WeightCategoryUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateWeightCategory>>,
+        TError,
+        {competitionId: number;categoryId: number;data: BodyType<WeightCategoryUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateWeightCategoryMutationOptions(options));
     }
 
 export const getDeleteWeightCategoryUrl = (competitionId: number,

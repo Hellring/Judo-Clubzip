@@ -7,6 +7,8 @@ export const competitionsTable = pgTable("competitions", {
   clubId: integer("club_id").notNull(),
   name: text("name").notNull(),
   location: text("location"),
+  lat: real("lat"),
+  lng: real("lng"),
   date: text("date").notNull(),
   format: text("format", { enum: ["olympic", "round_robin"] }).notNull(),
   fightDurationSeconds: integer("fight_duration_seconds").notNull().default(240),
@@ -20,6 +22,8 @@ export const weightCategoriesTable = pgTable("weight_categories", {
   name: text("name").notNull(),
   gender: text("gender", { enum: ["male", "female", "mixed"] }).notNull(),
   maxWeightKg: real("max_weight_kg"),
+  durationSeconds: integer("duration_seconds"),
+  wazaAriForIppon: integer("waza_ari_for_ippon").notNull().default(2),
 });
 
 export const participantsTable = pgTable("participants", {

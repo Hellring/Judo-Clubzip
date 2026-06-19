@@ -11,6 +11,7 @@ import {
   useAddParticipant,
   useGenerateBracket,
   useListAthletes,
+  useUpdateWeightCategory,
   getGetCompetitionQueryKey,
   getListWeightCategoriesQueryKey,
   getListParticipantsQueryKey,
@@ -26,7 +27,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Plus, Swords, Users, GitBranch, RefreshCw } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ArrowLeft, Plus, Swords, Users, GitBranch, RefreshCw, Copy, Settings2 } from "lucide-react";
 
 function StatusBadge({ status }: { status: string }) {
   const { t } = useTranslation();
@@ -158,6 +160,159 @@ function RoundRobinTable({ fights, participants }: { fights: any[]; participants
           })}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+interface CategorySettingsProps {
+  cat: any;
+  competitionId: number;
+  competitionFightDuration: number;
+  allCategories: any[];
+}
+
+function CategorySettings({ cat, competitionId, competitionFightDuration, allCategories }: CategorySettingsProps) {
+  const queryClient = useQueryClient();
+  const [duration, setDuration] = useState(String(cat.durationSeconds ?? competitionFightDuration));
+  const [wazaAri, setWazaAri] = useState(String(cat.wazaAriForIppon ?? 2));
+  const [copyOpen, setCopyOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [saved, setSaved] = useState(false);
+  const updateCategory = useUpdateWeightCategory();
+
+  const handleSave = () => {
+    updateCategory.mutate(
+      {
+        competitionId,
+        categoryId: cat.id,
+        data: { durationSeconds: parseInt(duration), wazaAriForIppon: parseInt(wazaAri) }
+      },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getListWeightCategoriesQueryKey(competitionId) });
+          setSaved(true);
+          setTimeout(() => setSaved(false), 1500);
+        }
+      }
+    );
+  };
+
+  const handleCopy = async () => {
+    await Promise.all(
+      selectedIds.map(cid =>
+        updateCategory.mutateAsync({
+          competitionId,
+          categoryId: cid,
+          data: { durationSeconds: parseInt(duration), wazaAriForIppon: parseInt(wazaAri) }
+        })
+      )
+    );
+    queryClient.invalidateQueries({ queryKey: getListWeightCategoriesQueryKey(competitionId) });
+    setCopyOpen(false);
+    setSelectedIds([]);
+  };
+
+  const otherCats = allCategories.filter(c => c.id !== cat.id);
+
+  return (
+    <div className="mt-3 pt-3 border-t space-y-2">
+      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
+        <Settings2 className="h-3 w-3" /> Настройки сетки
+      </p>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-1">
+          <Label className="text-xs">Время (сек)</Label>
+          <Input
+            type="number"
+            className="h-7 text-xs px-2"
+            value={duration}
+            onChange={e => setDuration(e.target.value)}
+            min={30}
+            max={600}
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Вазари → Иппон</Label>
+          <Select value={wazaAri} onValueChange={setWazaAri}>
+            <SelectTrigger className="h-7 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1">1 вазари</SelectItem>
+              <SelectItem value="2">2 вазари</SelectItem>
+              <SelectItem value="3">3 вазари</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <Button
+          size="sm"
+          className="h-6 text-xs flex-1"
+          onClick={handleSave}
+          disabled={updateCategory.isPending}
+          variant={saved ? "secondary" : "default"}
+        >
+          {saved ? "✓ Сохранено" : "Сохранить"}
+        </Button>
+        <Dialog open={copyOpen} onOpenChange={setCopyOpen}>
+          <DialogTrigger asChild>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-6 text-xs"
+              disabled={otherCats.length === 0}
+              title="Скопировать настройки на другие категории"
+            >
+              <Copy className="h-3 w-3 mr-1" />
+              Копировать
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Скопировать настройки</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-1 text-sm text-muted-foreground">
+              <p>Из: <span className="font-medium text-foreground">{cat.name}</span></p>
+              <p>Время: <span className="font-medium text-foreground">{duration} сек</span> · Вазари → Иппон: <span className="font-medium text-foreground">{wazaAri}</span></p>
+            </div>
+            <p className="text-sm font-medium">Применить к категориям:</p>
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {otherCats.map(c => (
+                <div key={c.id} className="flex items-center gap-2">
+                  <Checkbox
+                    id={`copy-${cat.id}-to-${c.id}`}
+                    checked={selectedIds.includes(c.id)}
+                    onCheckedChange={checked => {
+                      setSelectedIds(prev =>
+                        checked ? [...prev, c.id] : prev.filter(id => id !== c.id)
+                      );
+                    }}
+                  />
+                  <label htmlFor={`copy-${cat.id}-to-${c.id}`} className="text-sm cursor-pointer flex-1">
+                    {c.name}
+                    <span className="text-xs text-muted-foreground ml-2">
+                      ({c.durationSeconds ?? competitionFightDuration}с · {c.wazaAriForIppon}В)
+                    </span>
+                  </label>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" size="sm" onClick={() => { setCopyOpen(false); setSelectedIds([]); }}>
+                Отмена
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleCopy}
+                disabled={selectedIds.length === 0 || updateCategory.isPending}
+              >
+                Применить к {selectedIds.length} кат.
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 }
@@ -373,17 +528,20 @@ export default function CompetitionDetailPage() {
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {categories.map(cat => {
                   const catParts = participants.filter(p => p.categoryId === cat.id);
+                  const effectiveDuration = cat.durationSeconds ?? competition.fightDurationSeconds;
                   return (
                     <Card key={cat.id} data-testid={`card-category-${cat.id}`}
-                      className={`cursor-pointer transition-all hover:border-primary/30 ${selectedCategoryId === cat.id ? "border-primary" : ""}`}
-                      onClick={() => setSelectedCategoryId(selectedCategoryId === cat.id ? null : cat.id)}
+                      className={`transition-all hover:border-primary/30 ${selectedCategoryId === cat.id ? "border-primary" : ""}`}
                     >
-                      <CardHeader className="pb-2">
+                      <CardHeader className="pb-2 cursor-pointer" onClick={() => setSelectedCategoryId(selectedCategoryId === cat.id ? null : cat.id)}>
                         <div className="flex items-center justify-between">
                           <CardTitle className="text-base">{cat.name}</CardTitle>
                           <Badge variant="outline" className="text-xs">{cat.gender}</Badge>
                         </div>
-                        {cat.maxWeightKg && <p className="text-xs text-muted-foreground">до {cat.maxWeightKg} кг</p>}
+                        <div className="flex gap-2 flex-wrap">
+                          {cat.maxWeightKg && <p className="text-xs text-muted-foreground">до {cat.maxWeightKg} кг</p>}
+                          <p className="text-xs text-muted-foreground">{effectiveDuration}с · {cat.wazaAriForIppon}В→И</p>
+                        </div>
                       </CardHeader>
                       <CardContent>
                         <p className="text-sm text-muted-foreground">{catParts.length} {t("Participants").toLowerCase()}</p>
@@ -397,6 +555,12 @@ export default function CompetitionDetailPage() {
                             {catParts.length > 3 && <li className="text-xs text-muted-foreground">+{catParts.length - 3} more</li>}
                           </ul>
                         )}
+                        <CategorySettings
+                          cat={cat}
+                          competitionId={id}
+                          competitionFightDuration={competition.fightDurationSeconds}
+                          allCategories={categories}
+                        />
                       </CardContent>
                     </Card>
                   );
@@ -418,7 +582,12 @@ export default function CompetitionDetailPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Все категории</SelectItem>
-                    {categories.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
+                    {categories.map(c => (
+                      <SelectItem key={c.id} value={String(c.id)}>
+                        {c.name}
+                        {c.durationSeconds && <span className="text-muted-foreground ml-1">({c.durationSeconds}с)</span>}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -434,6 +603,16 @@ export default function CompetitionDetailPage() {
                   {t("GenerateBracket")}
                 </Button>
               )}
+              {selectedCategoryId && (() => {
+                const cat = categories.find(c => c.id === selectedCategoryId);
+                if (!cat) return null;
+                const dur = cat.durationSeconds ?? competition.fightDurationSeconds;
+                return (
+                  <Badge variant="outline" className="text-xs">
+                    ⏱ {dur}с · {cat.wazaAriForIppon}В→И
+                  </Badge>
+                );
+              })()}
             </div>
 
             {competition.format === "olympic" ? (

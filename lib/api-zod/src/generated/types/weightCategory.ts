@@ -14,5 +14,8 @@ export interface WeightCategory {
   gender: WeightCategoryGender;
   /** @nullable */
   maxWeightKg?: number | null;
+  /** @nullable */
+  durationSeconds?: number | null;
+  wazaAriForIppon: number;
   participantCount: number;
 }

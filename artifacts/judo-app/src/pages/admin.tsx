@@ -1,14 +1,16 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useListAdminUsers, useUpdateAdminUser, useListClubs } from "@workspace/api-client-react";
+import { useListAdminUsers, useUpdateAdminUser, useListClubs, useCreateInvitation } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import Layout from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Shield, CheckCircle } from "lucide-react";
+import { Shield, CheckCircle, Mail, Send } from "lucide-react";
 
 const ROLES = ["super_admin", "club_admin", "coach", "athlete", "parent"] as const;
 type Role = typeof ROLES[number];
@@ -100,6 +102,67 @@ function UserRow({ user, clubs, onSave, saving, saved }: UserRowProps) {
   );
 }
 
+function InviteSection() {
+  const [email, setEmail] = useState("");
+  const [result, setResult] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const invite = useCreateInvitation();
+
+  const handleInvite = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setResult(null);
+    invite.mutate(
+      { data: { emailAddress: email.trim() } },
+      {
+        onSuccess: (data) => {
+          setResult({ type: "success", message: data.message });
+          setEmail("");
+        },
+        onError: () => {
+          setResult({ type: "error", message: "Не удалось отправить приглашение." });
+        },
+      }
+    );
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <Mail className="h-4 w-4" />
+          Пригласить пользователя
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleInvite} className="flex gap-3 items-end">
+          <div className="flex-1 space-y-2">
+            <Label>Email-адрес</Label>
+            <Input
+              type="email"
+              placeholder="user@example.com"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <Button type="submit" disabled={invite.isPending || !email.trim()}>
+            <Send className="h-4 w-4 mr-2" />
+            {invite.isPending ? "Отправка..." : "Отправить приглашение"}
+          </Button>
+        </form>
+        {result && (
+          <p className={`mt-3 text-sm ${result.type === "success" ? "text-green-600" : "text-destructive"}`}>
+            {result.type === "success" ? "✓ " : "✗ "}{result.message}
+          </p>
+        )}
+        <p className="mt-2 text-xs text-muted-foreground">
+          Пользователь получит письмо со ссылкой для регистрации через Clerk.
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function AdminPage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -135,6 +198,8 @@ export default function AdminPage() {
             <p className="text-muted-foreground text-sm">{t("UserManagement")}</p>
           </div>
         </div>
+
+        <InviteSection />
 
         <Card>
           <CardHeader>

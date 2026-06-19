@@ -159,17 +159,20 @@ export default function AthletesPage() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>{t("Phone")}</Label>
-                  <Input data-testid="input-phone" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
+                  <Label>Телефон спортсмена</Label>
+                  <Input placeholder="+7..." data-testid="input-phone" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
+                  <p className="text-xs text-muted-foreground">Личный номер спортсмена</p>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="rounded-lg border p-3 space-y-3 bg-muted/20">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Контакт родителя / представителя</p>
                   <div className="space-y-2">
-                    <Label>{t("ParentName")}</Label>
-                    <Input data-testid="input-parent-name" value={form.parentName} onChange={e => setForm(f => ({ ...f, parentName: e.target.value }))} />
+                    <Label>Имя родителя / представителя</Label>
+                    <Input placeholder="Иванов Иван Иванович" data-testid="input-parent-name" value={form.parentName} onChange={e => setForm(f => ({ ...f, parentName: e.target.value }))} />
                   </div>
                   <div className="space-y-2">
-                    <Label>{t("ParentPhone")}</Label>
-                    <Input data-testid="input-parent-phone" value={form.parentPhone} onChange={e => setForm(f => ({ ...f, parentPhone: e.target.value }))} />
+                    <Label>Телефон родителя</Label>
+                    <Input placeholder="+7..." data-testid="input-parent-phone" value={form.parentPhone} onChange={e => setForm(f => ({ ...f, parentPhone: e.target.value }))} />
+                    <p className="text-xs text-muted-foreground">Номер принадлежит родителю / представителю</p>
                   </div>
                 </div>
                 <div className="flex justify-end gap-2">

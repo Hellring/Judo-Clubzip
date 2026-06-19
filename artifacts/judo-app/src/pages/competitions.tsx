@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Trophy, Calendar, MapPin, Users } from "lucide-react";
+import LocationPicker from "@/components/location-picker";
 
 export default function CompetitionsPage() {
   const { t } = useTranslation();
@@ -32,7 +33,8 @@ export default function CompetitionsPage() {
   const [open, setOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
   const [form, setForm] = useState({
-    name: "", date: "", location: "", format: "olympic", fightDurationSeconds: "240"
+    name: "", date: "", location: "", lat: undefined as number | undefined,
+    lng: undefined as number | undefined, format: "olympic", fightDurationSeconds: "240"
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -45,6 +47,8 @@ export default function CompetitionsPage() {
           name: form.name,
           date: form.date,
           location: form.location || undefined,
+          lat: form.lat,
+          lng: form.lng,
           format: form.format as "olympic" | "round_robin",
           fightDurationSeconds: parseInt(form.fightDurationSeconds),
         }
@@ -53,7 +57,7 @@ export default function CompetitionsPage() {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListCompetitionsQueryKey() });
           setOpen(false);
-          setForm({ name: "", date: "", location: "", format: "olympic", fightDurationSeconds: "240" });
+          setForm({ name: "", date: "", location: "", lat: undefined, lng: undefined, format: "olympic", fightDurationSeconds: "240" });
         }
       }
     );
@@ -78,7 +82,7 @@ export default function CompetitionsPage() {
                 {t("AddCompetition")}
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-lg">
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{t("AddCompetition")}</DialogTitle>
               </DialogHeader>
@@ -93,12 +97,6 @@ export default function CompetitionsPage() {
                     <Input type="date" data-testid="input-comp-date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} required />
                   </div>
                   <div className="space-y-2">
-                    <Label>{t("Location")}</Label>
-                    <Input data-testid="input-comp-location" value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
                     <Label>{t("Format")} *</Label>
                     <Select value={form.format} onValueChange={v => setForm(f => ({ ...f, format: v }))}>
                       <SelectTrigger data-testid="select-format"><SelectValue /></SelectTrigger>
@@ -108,11 +106,18 @@ export default function CompetitionsPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label>{t("Duration")}</Label>
-                    <Input type="number" data-testid="input-duration" value={form.fightDurationSeconds} onChange={e => setForm(f => ({ ...f, fightDurationSeconds: e.target.value }))} />
-                  </div>
                 </div>
+                <div className="space-y-2">
+                  <Label>{t("Duration")}</Label>
+                  <Input type="number" data-testid="input-duration" value={form.fightDurationSeconds} onChange={e => setForm(f => ({ ...f, fightDurationSeconds: e.target.value }))} />
+                </div>
+                <LocationPicker
+                  address={form.location}
+                  lat={form.lat}
+                  lng={form.lng}
+                  onAddressChange={v => setForm(f => ({ ...f, location: v }))}
+                  onLocationChange={(lat, lng) => setForm(f => ({ ...f, lat, lng }))}
+                />
                 <div className="flex justify-end gap-2">
                   <Button type="button" variant="outline" onClick={() => setOpen(false)}>{t("Cancel")}</Button>
                   <Button type="submit" data-testid="button-submit-competition" disabled={createCompetition.isPending}>{t("Save")}</Button>

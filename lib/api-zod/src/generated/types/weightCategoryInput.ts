@@ -11,4 +11,6 @@ export interface WeightCategoryInput {
   name: string;
   gender: WeightCategoryInputGender;
   maxWeightKg?: number;
+  durationSeconds?: number;
+  wazaAriForIppon?: number;
 }
