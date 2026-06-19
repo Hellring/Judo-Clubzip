@@ -64,6 +64,7 @@ export default function AthletesPage() {
   const [search, setSearch] = useState("");
   const [genderFilter, setGenderFilter] = useState("all");
   const [open, setOpen] = useState(false);
+  const [showContacts, setShowContacts] = useState(false);
   const [form, setForm] = useState({
     firstName: "", lastName: "", gender: "male", birthDate: "",
     weightKg: "", belt: "", phone: "", parentName: "", parentPhone: "", notes: ""
@@ -92,6 +93,7 @@ export default function AthletesPage() {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListAthletesQueryKey() });
           setOpen(false);
+          setShowContacts(false);
           setForm({ firstName: "", lastName: "", gender: "male", birthDate: "", weightKg: "", belt: "", phone: "", parentName: "", parentPhone: "", notes: "" });
         }
       }
@@ -190,23 +192,38 @@ export default function AthletesPage() {
                     </Select>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>Телефон спортсмена</Label>
-                  <Input placeholder="+7..." data-testid="input-phone" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
-                  <p className="text-xs text-muted-foreground">Личный номер спортсмена</p>
-                </div>
-                <div className="rounded-lg border p-3 space-y-3 bg-muted/20">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Контакт родителя / представителя</p>
-                  <div className="space-y-2">
-                    <Label>Имя родителя / представителя</Label>
-                    <Input placeholder="Иванов Иван Иванович" data-testid="input-parent-name" value={form.parentName} onChange={e => setForm(f => ({ ...f, parentName: e.target.value }))} />
+                {!showContacts ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowContacts(true)}
+                    className="text-sm text-primary hover:underline flex items-center gap-1"
+                  >
+                    <Plus className="h-3 w-3" /> Добавить контактные данные
+                  </button>
+                ) : (
+                  <div className="rounded-lg border p-3 space-y-3 bg-muted/20">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Контактные данные</p>
+                      <button type="button" onClick={() => { setShowContacts(false); setForm(f => ({ ...f, phone: "", parentName: "", parentPhone: "", notes: "" })); }} className="text-xs text-muted-foreground hover:text-destructive">✕ Убрать</button>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Телефон спортсмена</Label>
+                      <Input placeholder="+7..." data-testid="input-phone" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Имя родителя / представителя</Label>
+                      <Input placeholder="Иванов Иван Иванович" data-testid="input-parent-name" value={form.parentName} onChange={e => setForm(f => ({ ...f, parentName: e.target.value }))} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Телефон родителя / представителя</Label>
+                      <Input placeholder="+7..." data-testid="input-parent-phone" value={form.parentPhone} onChange={e => setForm(f => ({ ...f, parentPhone: e.target.value }))} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Заметки</Label>
+                      <Input placeholder="Дополнительная информация..." value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Телефон родителя</Label>
-                    <Input placeholder="+7..." data-testid="input-parent-phone" value={form.parentPhone} onChange={e => setForm(f => ({ ...f, parentPhone: e.target.value }))} />
-                    <p className="text-xs text-muted-foreground">Номер принадлежит родителю / представителю</p>
-                  </div>
-                </div>
+                )}
                 <div className="flex justify-end gap-2">
                   <Button type="button" variant="outline" onClick={() => setOpen(false)}>{t("Cancel")}</Button>
                   <Button type="submit" data-testid="button-submit-athlete" disabled={createAthlete.isPending}>{t("Save")}</Button>
