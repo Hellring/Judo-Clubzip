@@ -45,16 +45,18 @@ export default function ClubDetailPage() {
   const createAthlete = useCreateAthlete();
 
   const [athleteOpen, setAthleteOpen] = useState(false);
-  const [showAthleteContacts, setShowAthleteContacts] = useState(false);
-  const [athleteForm, setAthleteForm] = useState({
+  const emptyAthleteForm = () => ({
     firstName: "", lastName: "", gender: "male", birthDate: "", weightKg: "", belt: "",
-    phone: "", parentName: "", parentPhone: "", notes: "",
+    phones: [] as string[], parentName: "", parentPhones: [] as string[], notes: "",
   });
+  const [athleteForm, setAthleteForm] = useState(emptyAthleteForm);
 
   const BELTS = ["Белый", "Жёлтый", "Оранжевый", "Зелёный", "Синий", "Коричневый", "Чёрный"];
 
   const handleAddAthlete = (e: React.FormEvent) => {
     e.preventDefault();
+    const phonesJoined = athleteForm.phones.filter(Boolean).join(", ");
+    const parentPhonesJoined = athleteForm.parentPhones.filter(Boolean).join(", ");
     createAthlete.mutate(
       {
         data: {
@@ -65,9 +67,9 @@ export default function ClubDetailPage() {
           birthDate: athleteForm.birthDate || undefined,
           weightKg: athleteForm.weightKg ? parseFloat(athleteForm.weightKg) : undefined,
           belt: athleteForm.belt || undefined,
-          phone: athleteForm.phone || undefined,
+          phone: phonesJoined || undefined,
           parentName: athleteForm.parentName || undefined,
-          parentPhone: athleteForm.parentPhone || undefined,
+          parentPhone: parentPhonesJoined || undefined,
           notes: athleteForm.notes || undefined,
         },
       },
@@ -76,8 +78,7 @@ export default function ClubDetailPage() {
           qc.invalidateQueries({ queryKey: getListClubAthletesQueryKey(id) });
           qc.invalidateQueries({ queryKey: getGetClubStatsQueryKey(id) });
           setAthleteOpen(false);
-          setShowAthleteContacts(false);
-          setAthleteForm({ firstName: "", lastName: "", gender: "male", birthDate: "", weightKg: "", belt: "", phone: "", parentName: "", parentPhone: "", notes: "" });
+          setAthleteForm(emptyAthleteForm());
         },
       }
     );
@@ -289,38 +290,45 @@ export default function ClubDetailPage() {
                           </Select>
                         </div>
                       </div>
-                      {!showAthleteContacts ? (
-                        <button
-                          type="button"
-                          onClick={() => setShowAthleteContacts(true)}
-                          className="text-sm text-primary hover:underline flex items-center gap-1"
-                        >
-                          + Добавить контактные данные
-                        </button>
-                      ) : (
-                        <div className="rounded-lg border p-3 space-y-3 bg-muted/20">
-                          <div className="flex items-center justify-between">
-                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Контактные данные</p>
-                            <button type="button" onClick={() => { setShowAthleteContacts(false); setAthleteForm(f => ({ ...f, phone: "", parentName: "", parentPhone: "", notes: "" })); }} className="text-xs text-muted-foreground hover:text-destructive">✕ Убрать</button>
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Телефон спортсмена</Label>
-                            <Input placeholder="+7..." value={athleteForm.phone} onChange={e => setAthleteForm(f => ({ ...f, phone: e.target.value }))} />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Имя родителя / представителя</Label>
-                            <Input placeholder="Иванов Иван Иванович" value={athleteForm.parentName} onChange={e => setAthleteForm(f => ({ ...f, parentName: e.target.value }))} />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Телефон родителя / представителя</Label>
-                            <Input placeholder="+7..." value={athleteForm.parentPhone} onChange={e => setAthleteForm(f => ({ ...f, parentPhone: e.target.value }))} />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Заметки</Label>
-                            <Input placeholder="Дополнительная информация..." value={athleteForm.notes} onChange={e => setAthleteForm(f => ({ ...f, notes: e.target.value }))} />
-                          </div>
+                      <div className="rounded-lg border p-3 space-y-3 bg-muted/20">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Контактные данные</p>
+
+                        <div className="space-y-1">
+                          <Label className="text-xs">Телефоны спортсмена</Label>
+                          {athleteForm.phones.map((ph, i) => (
+                            <div key={i} className="flex gap-2">
+                              <Input placeholder="+7..." value={ph} onChange={e => setAthleteForm(f => { const phones = [...f.phones]; phones[i] = e.target.value; return { ...f, phones }; })} className="flex-1" />
+                              <button type="button" onClick={() => setAthleteForm(f => ({ ...f, phones: f.phones.filter((_, j) => j !== i) }))} className="text-muted-foreground hover:text-destructive px-1">✕</button>
+                            </div>
+                          ))}
+                          <button type="button" onClick={() => setAthleteForm(f => ({ ...f, phones: [...f.phones, ""] }))} className="text-xs text-primary hover:underline flex items-center gap-1 mt-1">
+                            <Plus className="h-3 w-3" /> Добавить телефон спортсмена
+                          </button>
                         </div>
-                      )}
+
+                        <div className="space-y-1">
+                          <Label className="text-xs">Имя родителя / представителя</Label>
+                          <Input placeholder="Иванов Иван Иванович" value={athleteForm.parentName} onChange={e => setAthleteForm(f => ({ ...f, parentName: e.target.value }))} />
+                        </div>
+
+                        <div className="space-y-1">
+                          <Label className="text-xs">Телефоны родителя / представителя</Label>
+                          {athleteForm.parentPhones.map((ph, i) => (
+                            <div key={i} className="flex gap-2">
+                              <Input placeholder="+7..." value={ph} onChange={e => setAthleteForm(f => { const parentPhones = [...f.parentPhones]; parentPhones[i] = e.target.value; return { ...f, parentPhones }; })} className="flex-1" />
+                              <button type="button" onClick={() => setAthleteForm(f => ({ ...f, parentPhones: f.parentPhones.filter((_, j) => j !== i) }))} className="text-muted-foreground hover:text-destructive px-1">✕</button>
+                            </div>
+                          ))}
+                          <button type="button" onClick={() => setAthleteForm(f => ({ ...f, parentPhones: [...f.parentPhones, ""] }))} className="text-xs text-primary hover:underline flex items-center gap-1 mt-1">
+                            <Plus className="h-3 w-3" /> Добавить телефон представителя
+                          </button>
+                        </div>
+
+                        <div className="space-y-1">
+                          <Label className="text-xs">Заметки</Label>
+                          <Input placeholder="Дополнительная информация..." value={athleteForm.notes} onChange={e => setAthleteForm(f => ({ ...f, notes: e.target.value }))} />
+                        </div>
+                      </div>
                       <div className="flex justify-end gap-2">
                         <Button type="button" variant="outline" onClick={() => setAthleteOpen(false)}>{t("Cancel")}</Button>
                         <Button type="submit" disabled={createAthlete.isPending}>
