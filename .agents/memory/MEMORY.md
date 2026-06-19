@@ -1,0 +1,2 @@
+- [Leaflet map setup](leaflet-setup.md) — Leaflet marker icons require manual icon URL override (delete _getIconUrl + mergeOptions with unpkg URLs) to avoid broken icons in Vite builds.
+- [Clerk invitations](clerk-invitations.md) — Use `clerkClient.invitations.createInvitation({ emailAddress })` imported from `@clerk/express`; wrap in try/catch for Clerk API errors.

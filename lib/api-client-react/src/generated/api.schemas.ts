@@ -104,6 +104,10 @@ export interface Competition {
   name: string;
   /** @nullable */
   location?: string | null;
+  /** @nullable */
+  lat?: number | null;
+  /** @nullable */
+  lng?: number | null;
   date: string;
   format: CompetitionFormat;
   fightDurationSeconds: number;
@@ -320,6 +324,8 @@ export interface CompetitionInput {
   clubId: number;
   name: string;
   location?: string;
+  lat?: number;
+  lng?: number;
   date: string;
   format: CompetitionInputFormat;
   fightDurationSeconds?: number;
@@ -384,6 +390,9 @@ export interface WeightCategory {
   gender: WeightCategoryGender;
   /** @nullable */
   maxWeightKg?: number | null;
+  /** @nullable */
+  durationSeconds?: number | null;
+  wazaAriForIppon: number;
   participantCount: number;
 }
 
@@ -415,6 +424,14 @@ export interface WeightCategoryInput {
   name: string;
   gender: WeightCategoryInputGender;
   maxWeightKg?: number;
+  durationSeconds?: number;
+  wazaAriForIppon?: number;
+}
+
+export interface WeightCategoryUpdate {
+  /** @nullable */
+  durationSeconds?: number | null;
+  wazaAriForIppon?: number;
 }
 
 export interface Participant {
@@ -666,6 +683,15 @@ export interface FightEventInput {
   athleteId: number;
   eventType: FightEventInputEventType;
   timestampSeconds: number;
+}
+
+export interface InvitationInput {
+  emailAddress: string;
+}
+
+export interface InvitationResult {
+  success: boolean;
+  message: string;
 }
 
 export type ListAthletesParams = {

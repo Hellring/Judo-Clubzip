@@ -158,6 +158,31 @@ router.delete("/:clubId/members/:memberId", requireAuth(), async (req, res) => {
   return res.status(204).send();
 });
 
+router.get("/:clubId/athletes", async (req, res) => {
+  const clubId = parseInt(req.params.clubId as string);
+  const athletes = await db.select().from(athletesTable).where(eq(athletesTable.clubId, clubId));
+  return res.json(athletes.map(a => ({ ...a, createdAt: a.createdAt.toISOString() })));
+});
+
+router.get("/:clubId/coaches", async (req, res) => {
+  const clubId = parseInt(req.params.clubId as string);
+  const coaches = await db.select({
+    id: usersTable.id,
+    clerkId: usersTable.clerkId,
+    email: usersTable.email,
+    firstName: usersTable.firstName,
+    lastName: usersTable.lastName,
+    role: usersTable.role,
+    clubId: usersTable.clubId,
+    clubName: clubsTable.name,
+    createdAt: usersTable.createdAt,
+  })
+    .from(usersTable)
+    .leftJoin(clubsTable, eq(usersTable.clubId, clubsTable.id))
+    .where(eq(usersTable.clubId, clubId));
+  return res.json(coaches.map(u => ({ ...u, createdAt: u.createdAt.toISOString() })));
+});
+
 router.get("/:clubId/payment-summary", async (req, res) => {
   const clubId = parseInt(req.params.clubId as string);
   const payments = await db.select().from(paymentsTable).where(eq(paymentsTable.clubId, clubId));

@@ -36,13 +36,13 @@ router.get("/", async (req, res) => {
 });
 
 router.post("/", requireAuth(), async (req, res) => {
-  const { clubId, name, location, date, format, fightDurationSeconds } = req.body;
+  const { clubId, name, location, lat, lng, date, format, fightDurationSeconds } = req.body;
   if (!clubId || !name || !date || !format) {
     return res.status(400).json({ error: "clubId, name, date, format are required" });
   }
   const [comp] = await db
     .insert(competitionsTable)
-    .values({ clubId, name, location, date, format, fightDurationSeconds: fightDurationSeconds ?? 240 })
+    .values({ clubId, name, location, lat, lng, date, format, fightDurationSeconds: fightDurationSeconds ?? 240 })
     .returning();
   return res.status(201).json(formatComp(comp, 0));
 });
@@ -82,10 +82,10 @@ router.get("/:competitionId", async (req, res) => {
 
 router.patch("/:competitionId", requireAuth(), async (req, res) => {
   const competitionId = parseInt(req.params.competitionId as string);
-  const { name, location, date, format, fightDurationSeconds, status } = req.body;
+  const { name, location, lat, lng, date, format, fightDurationSeconds, status } = req.body;
   const [updated] = await db
     .update(competitionsTable)
-    .set({ name, location, date, format, fightDurationSeconds, status })
+    .set({ name, location, lat, lng, date, format, fightDurationSeconds, status })
     .where(eq(competitionsTable.id, competitionId))
     .returning();
   if (!updated) return res.status(404).json({ error: "Competition not found" });
@@ -131,6 +131,19 @@ router.post("/:competitionId/categories", requireAuth(), async (req, res) => {
     .values({ competitionId, name, gender, maxWeightKg })
     .returning();
   return res.status(201).json({ ...cat, participantCount: 0 });
+});
+
+router.patch("/:competitionId/categories/:categoryId", requireAuth(), async (req, res) => {
+  const categoryId = parseInt(req.params.categoryId as string);
+  const competitionId = parseInt(req.params.competitionId as string);
+  const { durationSeconds, wazaAriForIppon } = req.body as { durationSeconds?: number | null; wazaAriForIppon?: number };
+  const updateData: Record<string, unknown> = {};
+  if (durationSeconds !== undefined) updateData.durationSeconds = durationSeconds;
+  if (wazaAriForIppon !== undefined) updateData.wazaAriForIppon = wazaAriForIppon;
+  const [updated] = await db.update(weightCategoriesTable).set(updateData).where(eq(weightCategoriesTable.id, categoryId)).returning();
+  if (!updated) return res.status(404).json({ error: "Category not found" });
+  const [r] = await db.select({ count: count() }).from(participantsTable).where(and(eq(participantsTable.competitionId, competitionId), eq(participantsTable.categoryId, categoryId)));
+  return res.json({ ...updated, participantCount: Number(r?.count ?? 0) });
 });
 
 router.delete("/:competitionId/categories/:categoryId", requireAuth(), async (req, res) => {

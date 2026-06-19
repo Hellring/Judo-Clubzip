@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { requireAuth, getAuth } from "@clerk/express";
+import { requireAuth, getAuth, clerkClient } from "@clerk/express";
 import { db, usersTable, clubsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 
@@ -61,6 +61,21 @@ router.patch("/users/:userId", async (req, res) => {
     clubName: club?.name ?? null,
     createdAt: updated.createdAt.toISOString(),
   });
+});
+
+router.post("/invitations", async (req, res) => {
+  if (!(await isSuperAdmin(req))) return res.status(403).json({ error: "Forbidden" });
+
+  const { emailAddress } = req.body as { emailAddress?: string };
+  if (!emailAddress) return res.status(400).json({ error: "emailAddress is required" });
+
+  try {
+    await clerkClient.invitations.createInvitation({ emailAddress });
+    return res.status(201).json({ success: true, message: `Invitation sent to ${emailAddress}` });
+  } catch (err: any) {
+    const msg = err?.errors?.[0]?.message ?? err?.message ?? "Failed to send invitation";
+    return res.status(400).json({ success: false, message: msg });
+  }
 });
 
 export default router;

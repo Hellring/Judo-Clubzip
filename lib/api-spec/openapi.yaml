@@ -85,6 +85,25 @@ paths:
                 items:
                   $ref: "#/components/schemas/UserAdmin"
 
+  /admin/invitations:
+    post:
+      operationId: createInvitation
+      tags: [admin]
+      summary: Send email invitation (super_admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InvitationInput"
+      responses:
+        "201":
+          description: Invitation sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvitationResult"
+
   /admin/users/{userId}:
     patch:
       operationId: updateAdminUser
@@ -196,6 +215,48 @@ paths:
       responses:
         "204":
           description: Deleted
+
+  /clubs/{clubId}/athletes:
+    get:
+      operationId: listClubAthletes
+      tags: [clubs]
+      summary: List athletes of a club
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Athletes list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Athlete"
+
+  /clubs/{clubId}/coaches:
+    get:
+      operationId: listClubCoaches
+      tags: [clubs]
+      summary: List coaches/admins of a club
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Coaches list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserAdmin"
 
   /clubs/{clubId}/stats:
     get:
@@ -737,6 +798,34 @@ paths:
                 $ref: "#/components/schemas/WeightCategory"
 
   /competitions/{competitionId}/categories/{categoryId}:
+    patch:
+      operationId: updateWeightCategory
+      tags: [competitions]
+      summary: Update weight category settings (timer, waza-ari threshold)
+      parameters:
+        - name: competitionId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: categoryId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WeightCategoryUpdate"
+      responses:
+        "200":
+          description: Updated category
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeightCategory"
     delete:
       operationId: deleteWeightCategory
       tags: [competitions]
@@ -1440,6 +1529,10 @@ components:
           type: string
         location:
           type: ["string", "null"]
+        lat:
+          type: ["number", "null"]
+        lng:
+          type: ["number", "null"]
         date:
           type: string
         format:
@@ -1474,6 +1567,10 @@ components:
           type: string
         location:
           type: string
+        lat:
+          type: number
+        lng:
+          type: number
         date:
           type: string
         format:
@@ -1560,6 +1657,10 @@ components:
           enum: [male, female, mixed]
         maxWeightKg:
           type: ["number", "null"]
+        durationSeconds:
+          type: ["integer", "null"]
+        wazaAriForIppon:
+          type: integer
         participantCount:
           type: integer
       required:
@@ -1567,6 +1668,7 @@ components:
         - competitionId
         - name
         - gender
+        - wazaAriForIppon
         - participantCount
 
     WeightCategoryInput:
@@ -1579,9 +1681,21 @@ components:
           enum: [male, female, mixed]
         maxWeightKg:
           type: number
+        durationSeconds:
+          type: integer
+        wazaAriForIppon:
+          type: integer
       required:
         - name
         - gender
+
+    WeightCategoryUpdate:
+      type: object
+      properties:
+        durationSeconds:
+          type: ["integer", "null"]
+        wazaAriForIppon:
+          type: integer
 
     Participant:
       type: object
@@ -1931,3 +2045,22 @@ components:
         - athleteId
         - eventType
         - timestampSeconds
+
+    InvitationInput:
+      type: object
+      properties:
+        emailAddress:
+          type: string
+      required:
+        - emailAddress
+
+    InvitationResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required:
+        - success
+        - message
