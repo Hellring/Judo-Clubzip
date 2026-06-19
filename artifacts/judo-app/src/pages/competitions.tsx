@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   useListCompetitions,
   useCreateCompetition,
+  useDeleteCompetition,
   useGetMe,
   getListCompetitionsQueryKey,
 } from "@workspace/api-client-react";
@@ -14,10 +15,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Trophy, Calendar, MapPin, Users } from "lucide-react";
+import { Plus, Trophy, Calendar, MapPin, Users, Trash2 } from "lucide-react";
 import LocationPicker from "@/components/location-picker";
 
 export default function CompetitionsPage() {
@@ -29,6 +31,7 @@ export default function CompetitionsPage() {
     user?.clubId ? { clubId: user.clubId } : {}
   );
   const createCompetition = useCreateCompetition();
+  const deleteCompetition = useDeleteCompetition();
 
   const [open, setOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
@@ -61,6 +64,15 @@ export default function CompetitionsPage() {
         }
       }
     );
+  };
+
+  const handleDelete = (competitionId: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    deleteCompetition.mutate({ competitionId }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListCompetitionsQueryKey() });
+      }
+    });
   };
 
   const filtered = statusFilter === "all"
@@ -162,9 +174,42 @@ export default function CompetitionsPage() {
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-2">
                     <CardTitle className="text-base leading-tight">{comp.name}</CardTitle>
-                    <Badge variant={statusVariant(comp.status)} className="shrink-0 text-xs">
-                      {t(comp.status.charAt(0).toUpperCase() + comp.status.slice(1) as any)}
-                    </Badge>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Badge variant={statusVariant(comp.status)} className="text-xs">
+                        {t(comp.status.charAt(0).toUpperCase() + comp.status.slice(1) as any)}
+                      </Badge>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                            onClick={e => e.stopPropagation()}
+                            data-testid={`btn-delete-competition-${comp.id}`}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Удалить соревнование?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Вы уверены, что хотите удалить «{comp.name}»? Это действие нельзя отменить.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel onClick={e => e.stopPropagation()}>Отмена</AlertDialogCancel>
+                            <AlertDialogAction
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              onClick={e => handleDelete(comp.id, e)}
+                              disabled={deleteCompetition.isPending}
+                            >
+                              Удалить
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </div>
                   <Badge variant="outline" className="w-fit text-xs">
                     {comp.format === "olympic" ? t("Olympic") : t("RoundRobin")}

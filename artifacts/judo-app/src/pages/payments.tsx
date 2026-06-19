@@ -5,6 +5,7 @@ import {
   useListPayments,
   useCreatePayment,
   useUpdatePayment,
+  useDeletePayment,
   useGetMe,
   useListAthletes,
   useGetClubPaymentSummary,
@@ -17,12 +18,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, CreditCard, CheckCircle, AlertCircle, Clock } from "lucide-react";
+import { Plus, CreditCard, CheckCircle, AlertCircle, Clock, Trash2 } from "lucide-react";
 
 export default function PaymentsPage() {
   const { t } = useTranslation();
@@ -43,6 +45,7 @@ export default function PaymentsPage() {
 
   const createPayment = useCreatePayment();
   const updatePayment = useUpdatePayment();
+  const deletePayment = useDeletePayment();
 
   const [statusFilter, setStatusFilter] = useState("all");
   const [open, setOpen] = useState(false);
@@ -79,6 +82,18 @@ export default function PaymentsPage() {
   const handleMarkPaid = (paymentId: number) => {
     updatePayment.mutate(
       { paymentId, data: { status: "paid", paidAt: new Date().toISOString().split("T")[0] } },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getListPaymentsQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getGetClubPaymentSummaryQueryKey(clubId ?? 0) });
+        }
+      }
+    );
+  };
+
+  const handleDelete = (paymentId: number) => {
+    deletePayment.mutate(
+      { paymentId },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListPaymentsQueryKey() });
@@ -164,7 +179,6 @@ export default function PaymentsPage() {
           </Dialog>
         </div>
 
-        {/* Summary cards */}
         <div className="grid gap-4 sm:grid-cols-4">
           <Card>
             <CardHeader className="pb-2">
@@ -216,7 +230,6 @@ export default function PaymentsPage() {
           </Card>
         </div>
 
-        {/* Status filter */}
         <div className="flex gap-2">
           {["all", "pending", "paid", "overdue"].map(s => (
             <Button
@@ -268,17 +281,49 @@ export default function PaymentsPage() {
                     </TableCell>
                     <TableCell>{statusBadge(p.status)}</TableCell>
                     <TableCell>
-                      {p.status !== "paid" && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleMarkPaid(p.id)}
-                          disabled={updatePayment.isPending}
-                          data-testid={`button-mark-paid-${p.id}`}
-                        >
-                          {t("MarkPaid")}
-                        </Button>
-                      )}
+                      <div className="flex items-center gap-1">
+                        {p.status !== "paid" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleMarkPaid(p.id)}
+                            disabled={updatePayment.isPending}
+                            data-testid={`button-mark-paid-${p.id}`}
+                          >
+                            {t("MarkPaid")}
+                          </Button>
+                        )}
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                              data-testid={`btn-delete-payment-${p.id}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Удалить платёж?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Удалить запись «{p.description}» на сумму {p.amount} {p.currency}? Это действие нельзя отменить.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Отмена</AlertDialogCancel>
+                              <AlertDialogAction
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                onClick={() => handleDelete(p.id)}
+                                disabled={deletePayment.isPending}
+                              >
+                                Удалить
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

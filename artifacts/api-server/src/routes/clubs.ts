@@ -135,13 +135,28 @@ router.get("/:clubId/members", async (req, res) => {
 
 router.post("/:clubId/members", requireAuth(), async (req, res) => {
   const clubId = parseInt(req.params.clubId as string);
-  const { email, role } = req.body;
+  const { email, role, firstName, lastName } = req.body;
   if (!email || !role) return res.status(400).json({ error: "email and role are required" });
 
   let user = await db.query.usersTable.findFirst({ where: eq(usersTable.email, email) });
   if (!user) {
-    const [created] = await db.insert(usersTable).values({ clerkId: `invited_${Date.now()}`, email, role: "coach" }).returning();
+    const [created] = await db.insert(usersTable).values({
+      clerkId: `invited_${Date.now()}`,
+      email,
+      role: "coach",
+      firstName: firstName ?? null,
+      lastName: lastName ?? null,
+    }).returning();
     user = created;
+  } else if (firstName || lastName) {
+    const [updated] = await db.update(usersTable)
+      .set({
+        firstName: firstName ?? user.firstName,
+        lastName: lastName ?? user.lastName,
+      })
+      .where(eq(usersTable.id, user.id))
+      .returning();
+    user = updated;
   }
 
   const [member] = await db.insert(clubMembersTable).values({ userId: user.id, clubId, role }).returning();

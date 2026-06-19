@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   useListAthletes,
   useCreateAthlete,
+  useDeleteAthlete,
   useGetMe,
   getListAthletesQueryKey,
 } from "@workspace/api-client-react";
@@ -14,10 +15,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Search, User } from "lucide-react";
+import { Plus, Search, User, Trash2 } from "lucide-react";
 
 const BELTS = ["Белый", "Жёлтый", "Оранжевый", "Зелёный", "Синий", "Коричневый", "Чёрный", "White", "Yellow", "Orange", "Green", "Blue", "Brown", "Black"];
 
@@ -51,6 +53,7 @@ export default function AthletesPage() {
     user?.clubId ? { clubId: user.clubId } : {}
   );
   const createAthlete = useCreateAthlete();
+  const deleteAthlete = useDeleteAthlete();
 
   const [search, setSearch] = useState("");
   const [genderFilter, setGenderFilter] = useState("all");
@@ -84,6 +87,18 @@ export default function AthletesPage() {
           queryClient.invalidateQueries({ queryKey: getListAthletesQueryKey() });
           setOpen(false);
           setForm({ firstName: "", lastName: "", gender: "male", birthDate: "", weightKg: "", belt: "", phone: "", parentName: "", parentPhone: "", notes: "" });
+        }
+      }
+    );
+  };
+
+  const handleDelete = (athleteId: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    deleteAthlete.mutate(
+      { athleteId },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getListAthletesQueryKey() });
         }
       }
     );
@@ -224,6 +239,7 @@ export default function AthletesPage() {
                   <TableHead>Возраст</TableHead>
                   <TableHead>{t("Weight")}</TableHead>
                   <TableHead>{t("Belt")}</TableHead>
+                  <TableHead className="w-16"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -242,6 +258,39 @@ export default function AthletesPage() {
                       {a.belt ? (
                         <span className={`px-2 py-0.5 rounded text-xs font-semibold ${beltBadge(a.belt)}`}>{a.belt}</span>
                       ) : "—"}
+                    </TableCell>
+                    <TableCell>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            onClick={e => e.stopPropagation()}
+                            data-testid={`btn-delete-athlete-${a.id}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Удалить спортсмена?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Вы уверены, что хотите удалить {a.firstName} {a.lastName}? Это действие нельзя отменить.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel onClick={e => e.stopPropagation()}>Отмена</AlertDialogCancel>
+                            <AlertDialogAction
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              onClick={e => handleDelete(a.id, e)}
+                              disabled={deleteAthlete.isPending}
+                            >
+                              Удалить
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </TableCell>
                   </TableRow>
                 ))}

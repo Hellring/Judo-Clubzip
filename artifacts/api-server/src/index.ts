@@ -1,5 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { seedAdminUser } from "./seed-admin";
 
 const rawPort = process.env["PORT"];
 
@@ -15,11 +16,20 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-app.listen(port, (err) => {
+app.listen(port, async (err) => {
   if (err) {
     logger.error({ err }, "Error listening on port");
     process.exit(1);
   }
 
   logger.info({ port }, "Server listening");
+
+  if (process.env.DATABASE_URL) {
+    try {
+      await seedAdminUser();
+      logger.info("Admin user seed completed");
+    } catch (e: any) {
+      logger.warn({ err: e?.message }, "Admin user seed skipped");
+    }
+  }
 });
