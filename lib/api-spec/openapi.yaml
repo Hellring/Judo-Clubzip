@@ -84,6 +84,32 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/UserAdmin"
+    post:
+      operationId: createAdminUser
+      tags: [admin]
+      summary: Create user directly without email confirmation (super_admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserInput"
+      responses:
+        "201":
+          description: Created user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserAdmin"
+        "400":
+          description: Validation or Clerk error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
 
   /admin/invitations:
     post:
@@ -1975,6 +2001,26 @@ components:
           enum: [super_admin, club_admin, coach, athlete, parent]
         clubId:
           type: ["integer", "null"]
+
+    CreateUserInput:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        role:
+          type: string
+          enum: [super_admin, club_admin, coach, athlete, parent]
+        clubId:
+          type: ["integer", "null"]
+      required:
+        - email
+        - password
 
     WeightLog:
       type: object

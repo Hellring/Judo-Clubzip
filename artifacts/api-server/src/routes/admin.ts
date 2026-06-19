@@ -63,6 +63,47 @@ router.patch("/users/:userId", async (req, res) => {
   });
 });
 
+router.post("/users", async (req, res) => {
+  if (!(await isSuperAdmin(req))) return res.status(403).json({ error: "Forbidden" });
+
+  const { email, password, firstName, lastName, role = "coach", clubId } =
+    req.body as { email?: string; password?: string; firstName?: string; lastName?: string; role?: string; clubId?: number | null };
+
+  if (!email || !password) return res.status(400).json({ error: "email and password are required" });
+
+  try {
+    const clerkUser = await clerkClient.users.createUser({
+      emailAddress: [email],
+      password,
+      firstName: firstName || undefined,
+      lastName: lastName || undefined,
+      skipPasswordChecks: false,
+    });
+
+    const [dbUser] = await db.insert(usersTable).values({
+      clerkId: clerkUser.id,
+      email,
+      firstName: firstName || null,
+      lastName: lastName || null,
+      role: role as "super_admin" | "club_admin" | "coach" | "athlete" | "parent",
+      clubId: clubId ?? null,
+    }).returning();
+
+    const club = dbUser.clubId
+      ? await db.query.clubsTable.findFirst({ where: eq(clubsTable.id, dbUser.clubId) })
+      : null;
+
+    return res.status(201).json({
+      ...dbUser,
+      clubName: club?.name ?? null,
+      createdAt: dbUser.createdAt.toISOString(),
+    });
+  } catch (err: any) {
+    const msg = err?.errors?.[0]?.longMessage ?? err?.errors?.[0]?.message ?? err?.message ?? "Failed to create user";
+    return res.status(400).json({ error: msg });
+  }
+});
+
 router.post("/invitations", async (req, res) => {
   if (!(await isSuperAdmin(req))) return res.status(403).json({ error: "Forbidden" });
 
