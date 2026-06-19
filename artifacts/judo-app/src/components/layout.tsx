@@ -53,7 +53,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <Button variant="ghost" size="sm" onClick={toggleLanguage} className="text-sidebar-foreground/70 hover:text-sidebar-foreground">
             {i18n.language === 'ru' ? 'EN' : 'RU'}
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => signOut({ redirectUrl: '/' })} className="text-sidebar-foreground/70 hover:text-sidebar-foreground flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => signOut({ redirectUrl: window.location.origin + (import.meta.env.BASE_URL ?? '/') })} className="text-sidebar-foreground/70 hover:text-sidebar-foreground flex items-center gap-2">
             <LogOut className="h-4 w-4" />
             <span className="sr-only">{t("SignOut")}</span>
           </Button>
