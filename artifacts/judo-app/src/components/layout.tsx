@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useClerk } from "@clerk/react";
 import { useGetMe } from "@workspace/api-client-react";
-import { User, LayoutDashboard, Users, CreditCard, Trophy, Building2, LogOut, Menu } from "lucide-react";
+import { LayoutDashboard, Users, CreditCard, Trophy, Building2, LogOut, Menu, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
@@ -22,6 +22,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { href: "/athletes", label: t("Athletes"), icon: Users },
     { href: "/payments", label: t("Payments"), icon: CreditCard },
     { href: "/competitions", label: t("Competitions"), icon: Trophy },
+    ...(user?.role === 'super_admin' ? [{ href: "/admin", label: t("Admin"), icon: Shield }] : []),
   ];
 
   const SidebarContent = () => (

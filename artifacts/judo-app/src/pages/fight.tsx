@@ -17,14 +17,80 @@ import Layout from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, RotateCcw, Play, Square, Pause } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ArrowLeft, RotateCcw, Play, Square, Pause, Settings } from "lucide-react";
 
-const DEFAULT_DURATION = 240;
+const AGE_PRESETS = [
+  { labelKey: "Kids",    seconds: 60  },
+  { labelKey: "Youth",   seconds: 120 },
+  { labelKey: "Juniors", seconds: 180 },
+  { labelKey: "Adults",  seconds: 240 },
+] as const;
 
 function formatTime(seconds: number) {
   const m = Math.floor(seconds / 60).toString().padStart(2, "0");
   const s = (seconds % 60).toString().padStart(2, "0");
   return `${m}:${s}`;
+}
+
+interface TimerSettingsProps {
+  current: number;
+  onApply: (seconds: number) => void;
+  onClose: () => void;
+  disabled: boolean;
+}
+
+function TimerSettings({ current, onApply, onClose, disabled }: TimerSettingsProps) {
+  const { t } = useTranslation();
+  const [custom, setCustom] = useState(current.toString());
+
+  return (
+    <div className="rounded-2xl border-2 border-border bg-card p-5 space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="font-bold text-base">{t("TimerSettings")}</h3>
+        <Button variant="ghost" size="sm" onClick={onClose}>✕</Button>
+      </div>
+      <p className="text-xs text-muted-foreground">{t("AgeGroup")}</p>
+      <div className="grid grid-cols-2 gap-2">
+        {AGE_PRESETS.map(p => (
+          <button
+            key={p.labelKey}
+            disabled={disabled}
+            onClick={() => { onApply(p.seconds); onClose(); }}
+            className={`rounded-xl border-2 px-3 py-3 text-sm font-semibold text-center transition-all hover:border-primary hover:bg-primary/5 active:scale-95 disabled:opacity-40 ${current === p.seconds ? "border-primary bg-primary/10 text-primary" : "border-border"}`}
+            data-testid={`preset-${p.labelKey.toLowerCase()}`}
+          >
+            {t(p.labelKey as any)}
+          </button>
+        ))}
+      </div>
+      <div className="space-y-2">
+        <p className="text-xs text-muted-foreground">{t("CustomSeconds")}</p>
+        <div className="flex gap-2">
+          <Input
+            type="number"
+            min={10}
+            max={600}
+            value={custom}
+            onChange={e => setCustom(e.target.value)}
+            className="w-24"
+            data-testid="input-custom-duration"
+          />
+          <Button
+            size="sm"
+            disabled={disabled}
+            onClick={() => {
+              const v = parseInt(custom);
+              if (v >= 10 && v <= 600) { onApply(v); onClose(); }
+            }}
+            data-testid="btn-apply-custom"
+          >
+            {t("ApplySettings")}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 interface ScoreButtonProps {
@@ -142,14 +208,17 @@ export default function FightPage() {
   const addEvent = useAddFightEvent();
   const deleteEvent = useDeleteFightEvent();
 
-  const [timeLeft, setTimeLeft] = useState(DEFAULT_DURATION);
+  const [duration, setDuration] = useState(240);
+  const [timeLeft, setTimeLeft] = useState(240);
   const [running, setRunning] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const initializedRef = useRef(false);
 
   useEffect(() => {
     if (fight && !initializedRef.current) {
-      setTimeLeft(DEFAULT_DURATION);
+      setDuration(240);
+      setTimeLeft(240);
       initializedRef.current = true;
     }
   }, [fight]);
@@ -171,6 +240,12 @@ export default function FightPage() {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [running]);
 
+  const handleApplyDuration = (seconds: number) => {
+    if (running) return;
+    setDuration(seconds);
+    setTimeLeft(seconds);
+  };
+
   const invalidate = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: getGetFightQueryKey(id) });
     queryClient.invalidateQueries({ queryKey: getListFightEventsQueryKey(id) });
@@ -187,7 +262,7 @@ export default function FightPage() {
 
   const handleFinish = () => {
     setRunning(false);
-    const elapsed = DEFAULT_DURATION - timeLeft;
+    const elapsed = duration - timeLeft;
     finishFight.mutate(
       { fightId: id, data: { winnerId: fight?.winnerId ?? null, durationSeconds: elapsed } },
       { onSuccess: invalidate }
@@ -195,7 +270,7 @@ export default function FightPage() {
   };
 
   const handleEvent = (athleteId: number, eventType: FightEventInputEventType) => {
-    const elapsed = DEFAULT_DURATION - timeLeft;
+    const elapsed = duration - timeLeft;
     addEvent.mutate(
       { fightId: id, data: { athleteId, eventType, timestampSeconds: elapsed } },
       {
@@ -247,6 +322,8 @@ export default function FightPage() {
     timeLeft <= 30 ? "text-red-500" :
     timeLeft <= 60 ? "text-amber-500" : "text-foreground";
 
+  const activePreset = AGE_PRESETS.find(p => p.seconds === duration);
+
   return (
     <Layout>
       <div className="space-y-6 max-w-4xl mx-auto">
@@ -260,7 +337,19 @@ export default function FightPage() {
               {t("Round")} {fight.round} · Позиция {fight.position}
             </p>
           </div>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
+            {!isFinished && !isInProgress && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowSettings(s => !s)}
+                className="gap-1.5"
+                data-testid="btn-timer-settings"
+              >
+                <Settings className="h-4 w-4" />
+                {t("TimerSettings")}
+              </Button>
+            )}
             <Badge
               variant={isFinished ? "secondary" : isInProgress ? "default" : "outline"}
               className="text-sm"
@@ -271,11 +360,28 @@ export default function FightPage() {
           </div>
         </div>
 
+        {showSettings && (
+          <TimerSettings
+            current={duration}
+            onApply={handleApplyDuration}
+            onClose={() => setShowSettings(false)}
+            disabled={isInProgress}
+          />
+        )}
+
         {/* Timer */}
         <div className="text-center py-6 rounded-2xl bg-card border-2 border-border relative overflow-hidden">
+          {activePreset && (
+            <div className="absolute top-3 left-1/2 -translate-x-1/2">
+              <Badge variant="outline" className="text-xs font-medium px-2">
+                {t(activePreset.labelKey as any)}
+              </Badge>
+            </div>
+          )}
           <div className={`text-8xl font-black tabular-nums tracking-tighter ${timerColor}`} data-testid="display-timer">
             {formatTime(timeLeft)}
           </div>
+          <div className="text-xs text-muted-foreground mt-1">{t("Duration")}: {formatTime(duration)}</div>
           <div className="flex justify-center gap-3 mt-6">
             {!isFinished && !isInProgress && (
               <Button size="lg" onClick={handleStart} disabled={startFight.isPending} data-testid="button-start-fight" className="gap-2">

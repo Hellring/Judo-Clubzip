@@ -11,6 +11,8 @@ tags:
     description: Health operations
   - name: auth
     description: Authentication
+  - name: admin
+    description: Admin operations
   - name: clubs
     description: Club management
   - name: athletes
@@ -67,6 +69,46 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
+
+  /admin/users:
+    get:
+      operationId: listAdminUsers
+      tags: [admin]
+      summary: List all users (super_admin only)
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserAdmin"
+
+  /admin/users/{userId}:
+    patch:
+      operationId: updateAdminUser
+      tags: [admin]
+      summary: Update user role and club assignment (super_admin only)
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserAdminUpdate"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserAdmin"
 
   /clubs:
     get:
@@ -369,6 +411,70 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/FightWithContext"
+
+  /athletes/{athleteId}/weight-logs:
+    get:
+      operationId: listWeightLogs
+      tags: [athletes]
+      summary: List weight log history for an athlete
+      parameters:
+        - name: athleteId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Weight log list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WeightLog"
+    post:
+      operationId: addWeightLog
+      tags: [athletes]
+      summary: Add a weight log entry for an athlete
+      parameters:
+        - name: athleteId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WeightLogInput"
+      responses:
+        "201":
+          description: Created weight log
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeightLog"
+
+  /athletes/{athleteId}/weight-logs/{logId}:
+    delete:
+      operationId: deleteWeightLog
+      tags: [athletes]
+      summary: Delete a weight log entry
+      parameters:
+        - name: athleteId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: logId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
 
   /athletes/{athleteId}/payments:
     get:
@@ -1717,6 +1823,75 @@ components:
         - athlete2Ippon
         - athlete2WazaAri
         - athlete2Shido
+
+    UserAdmin:
+      type: object
+      properties:
+        id:
+          type: integer
+        clerkId:
+          type: string
+        email:
+          type: string
+        firstName:
+          type: ["string", "null"]
+        lastName:
+          type: ["string", "null"]
+        role:
+          type: string
+          enum: [super_admin, club_admin, coach, athlete, parent]
+        clubId:
+          type: ["integer", "null"]
+        clubName:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - clerkId
+        - email
+        - role
+        - createdAt
+
+    UserAdminUpdate:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: [super_admin, club_admin, coach, athlete, parent]
+        clubId:
+          type: ["integer", "null"]
+
+    WeightLog:
+      type: object
+      properties:
+        id:
+          type: integer
+        athleteId:
+          type: integer
+        weightKg:
+          type: number
+        note:
+          type: ["string", "null"]
+        recordedAt:
+          type: string
+      required:
+        - id
+        - athleteId
+        - weightKg
+        - recordedAt
+
+    WeightLogInput:
+      type: object
+      properties:
+        weightKg:
+          type: number
+        note:
+          type: string
+        recordedAt:
+          type: string
+      required:
+        - weightKg
 
     FightEvent:
       type: object

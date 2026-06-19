@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { requireAuth } from "@clerk/express";
 import { db } from "@workspace/db";
-import { athletesTable, fightsTable, paymentsTable } from "@workspace/db";
-import { eq, or, and, sql } from "drizzle-orm";
+import { athletesTable, fightsTable, paymentsTable, weightLogsTable } from "@workspace/db";
+import { eq, or, and, sql, desc } from "drizzle-orm";
 
 const router = Router();
 
@@ -147,6 +147,30 @@ router.get("/:athleteId/payments", async (req, res) => {
     createdAt: p.createdAt.toISOString(),
     athlete: athlete ? formatAthlete(athlete) : null,
   })));
+});
+
+router.get("/:athleteId/weight-logs", async (req, res) => {
+  const athleteId = parseInt(req.params.athleteId as string);
+  const logs = await db.select().from(weightLogsTable)
+    .where(eq(weightLogsTable.athleteId, athleteId))
+    .orderBy(desc(weightLogsTable.recordedAt));
+  return res.json(logs.map(l => ({ ...l, recordedAt: l.recordedAt.toISOString() })));
+});
+
+router.post("/:athleteId/weight-logs", requireAuth(), async (req, res) => {
+  const athleteId = parseInt(req.params.athleteId as string);
+  const { weightKg, note, recordedAt } = req.body as { weightKg: number; note?: string; recordedAt?: string };
+  if (!weightKg) return res.status(400).json({ error: "weightKg is required" });
+  const [log] = await db.insert(weightLogsTable)
+    .values({ athleteId, weightKg, note, recordedAt: recordedAt ? new Date(recordedAt) : new Date() })
+    .returning();
+  return res.status(201).json({ ...log, recordedAt: log.recordedAt.toISOString() });
+});
+
+router.delete("/:athleteId/weight-logs/:logId", requireAuth(), async (req, res) => {
+  const logId = parseInt(req.params.logId as string);
+  await db.delete(weightLogsTable).where(eq(weightLogsTable.id, logId));
+  return res.status(204).send();
 });
 
 export default router;

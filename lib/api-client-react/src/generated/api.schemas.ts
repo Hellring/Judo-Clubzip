@@ -593,6 +593,65 @@ export interface FightWithContext {
   finishedAt?: string | null;
 }
 
+export type UserAdminRole = typeof UserAdminRole[keyof typeof UserAdminRole];
+
+
+export const UserAdminRole = {
+  super_admin: 'super_admin',
+  club_admin: 'club_admin',
+  coach: 'coach',
+  athlete: 'athlete',
+  parent: 'parent',
+} as const;
+
+export interface UserAdmin {
+  id: number;
+  clerkId: string;
+  email: string;
+  /** @nullable */
+  firstName?: string | null;
+  /** @nullable */
+  lastName?: string | null;
+  role: UserAdminRole;
+  /** @nullable */
+  clubId?: number | null;
+  /** @nullable */
+  clubName?: string | null;
+  createdAt: string;
+}
+
+export type UserAdminUpdateRole = typeof UserAdminUpdateRole[keyof typeof UserAdminUpdateRole];
+
+
+export const UserAdminUpdateRole = {
+  super_admin: 'super_admin',
+  club_admin: 'club_admin',
+  coach: 'coach',
+  athlete: 'athlete',
+  parent: 'parent',
+} as const;
+
+export interface UserAdminUpdate {
+  role?: UserAdminUpdateRole;
+  /** @nullable */
+  clubId?: number | null;
+}
+
+export interface WeightLog {
+  id: number;
+  athleteId: number;
+  weightKg: number;
+  /** @nullable */
+  note?: string | null;
+  recordedAt: string;
+}
+
+export interface WeightLogInput {
+  weightKg: number;
+  note?: string;
+  recordedAt?: string;
+}
+
 export type FightEventInputEventType = typeof FightEventInputEventType[keyof typeof FightEventInputEventType];
 
 

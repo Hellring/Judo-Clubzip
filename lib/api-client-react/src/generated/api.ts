@@ -53,9 +53,13 @@ import type {
   PaymentSummary,
   PaymentUpdate,
   User,
+  UserAdmin,
+  UserAdminUpdate,
   UserUpdate,
   WeightCategory,
-  WeightCategoryInput
+  WeightCategoryInput,
+  WeightLog,
+  WeightLogInput
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -293,6 +297,155 @@ export const useUpdateMe = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getUpdateMeMutationOptions(options));
+    }
+
+export const getListAdminUsersUrl = () => {
+
+
+
+
+  return `/api/admin/users`
+}
+
+/**
+ * @summary List all users (super_admin only)
+ */
+export const listAdminUsers = async ( options?: RequestInit): Promise<UserAdmin[]> => {
+
+  return customFetch<UserAdmin[]>(getListAdminUsersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminUsersQueryKey = () => {
+    return [
+    `/api/admin/users`
+    ] as const;
+    }
+
+
+export const getListAdminUsersQueryOptions = <TData = Awaited<ReturnType<typeof listAdminUsers>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminUsers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminUsersQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminUsers>>> = ({ signal }) => listAdminUsers({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminUsers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminUsersQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminUsers>>>
+export type ListAdminUsersQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all users (super_admin only)
+ */
+
+export function useListAdminUsers<TData = Awaited<ReturnType<typeof listAdminUsers>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminUsers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminUsersQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateAdminUserUrl = (userId: number,) => {
+
+
+
+
+  return `/api/admin/users/${userId}`
+}
+
+/**
+ * @summary Update user role and club assignment (super_admin only)
+ */
+export const updateAdminUser = async (userId: number,
+    userAdminUpdate: UserAdminUpdate, options?: RequestInit): Promise<UserAdmin> => {
+
+  return customFetch<UserAdmin>(getUpdateAdminUserUrl(userId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      userAdminUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateAdminUserMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminUser>>, TError,{userId: number;data: BodyType<UserAdminUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAdminUser>>, TError,{userId: number;data: BodyType<UserAdminUpdate>}, TContext> => {
+
+const mutationKey = ['updateAdminUser'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAdminUser>>, {userId: number;data: BodyType<UserAdminUpdate>}> = (props) => {
+          const {userId,data} = props ?? {};
+
+          return  updateAdminUser(userId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAdminUserMutationResult = NonNullable<Awaited<ReturnType<typeof updateAdminUser>>>
+    export type UpdateAdminUserMutationBody = BodyType<UserAdminUpdate>
+    export type UpdateAdminUserMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update user role and club assignment (super_admin only)
+ */
+export const useUpdateAdminUser = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminUser>>, TError,{userId: number;data: BodyType<UserAdminUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAdminUser>>,
+        TError,
+        {userId: number;data: BodyType<UserAdminUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateAdminUserMutationOptions(options));
     }
 
 export const getListClubsUrl = () => {
@@ -1487,6 +1640,227 @@ export function useGetAthleteFights<TData = Awaited<ReturnType<typeof getAthlete
 
 
 
+
+export const getListWeightLogsUrl = (athleteId: number,) => {
+
+
+
+
+  return `/api/athletes/${athleteId}/weight-logs`
+}
+
+/**
+ * @summary List weight log history for an athlete
+ */
+export const listWeightLogs = async (athleteId: number, options?: RequestInit): Promise<WeightLog[]> => {
+
+  return customFetch<WeightLog[]>(getListWeightLogsUrl(athleteId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListWeightLogsQueryKey = (athleteId: number,) => {
+    return [
+    `/api/athletes/${athleteId}/weight-logs`
+    ] as const;
+    }
+
+
+export const getListWeightLogsQueryOptions = <TData = Awaited<ReturnType<typeof listWeightLogs>>, TError = ErrorType<unknown>>(athleteId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWeightLogs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListWeightLogsQueryKey(athleteId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listWeightLogs>>> = ({ signal }) => listWeightLogs(athleteId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(athleteId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listWeightLogs>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListWeightLogsQueryResult = NonNullable<Awaited<ReturnType<typeof listWeightLogs>>>
+export type ListWeightLogsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List weight log history for an athlete
+ */
+
+export function useListWeightLogs<TData = Awaited<ReturnType<typeof listWeightLogs>>, TError = ErrorType<unknown>>(
+ athleteId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWeightLogs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListWeightLogsQueryOptions(athleteId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAddWeightLogUrl = (athleteId: number,) => {
+
+
+
+
+  return `/api/athletes/${athleteId}/weight-logs`
+}
+
+/**
+ * @summary Add a weight log entry for an athlete
+ */
+export const addWeightLog = async (athleteId: number,
+    weightLogInput: WeightLogInput, options?: RequestInit): Promise<WeightLog> => {
+
+  return customFetch<WeightLog>(getAddWeightLogUrl(athleteId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      weightLogInput,)
+  }
+);}
+
+
+
+
+export const getAddWeightLogMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addWeightLog>>, TError,{athleteId: number;data: BodyType<WeightLogInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addWeightLog>>, TError,{athleteId: number;data: BodyType<WeightLogInput>}, TContext> => {
+
+const mutationKey = ['addWeightLog'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addWeightLog>>, {athleteId: number;data: BodyType<WeightLogInput>}> = (props) => {
+          const {athleteId,data} = props ?? {};
+
+          return  addWeightLog(athleteId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddWeightLogMutationResult = NonNullable<Awaited<ReturnType<typeof addWeightLog>>>
+    export type AddWeightLogMutationBody = BodyType<WeightLogInput>
+    export type AddWeightLogMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Add a weight log entry for an athlete
+ */
+export const useAddWeightLog = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addWeightLog>>, TError,{athleteId: number;data: BodyType<WeightLogInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addWeightLog>>,
+        TError,
+        {athleteId: number;data: BodyType<WeightLogInput>},
+        TContext
+      > => {
+      return useMutation(getAddWeightLogMutationOptions(options));
+    }
+
+export const getDeleteWeightLogUrl = (athleteId: number,
+    logId: number,) => {
+
+
+
+
+  return `/api/athletes/${athleteId}/weight-logs/${logId}`
+}
+
+/**
+ * @summary Delete a weight log entry
+ */
+export const deleteWeightLog = async (athleteId: number,
+    logId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteWeightLogUrl(athleteId,logId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteWeightLogMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteWeightLog>>, TError,{athleteId: number;logId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteWeightLog>>, TError,{athleteId: number;logId: number}, TContext> => {
+
+const mutationKey = ['deleteWeightLog'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteWeightLog>>, {athleteId: number;logId: number}> = (props) => {
+          const {athleteId,logId} = props ?? {};
+
+          return  deleteWeightLog(athleteId,logId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteWeightLogMutationResult = NonNullable<Awaited<ReturnType<typeof deleteWeightLog>>>
+
+    export type DeleteWeightLogMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete a weight log entry
+ */
+export const useDeleteWeightLog = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteWeightLog>>, TError,{athleteId: number;logId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteWeightLog>>,
+        TError,
+        {athleteId: number;logId: number},
+        TContext
+      > => {
+      return useMutation(getDeleteWeightLogMutationOptions(options));
+    }
 
 export const getGetAthletePaymentsUrl = (athleteId: number,) => {
 
