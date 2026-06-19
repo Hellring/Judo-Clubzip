@@ -8,6 +8,7 @@ import {
   useDeletePayment,
   useGetMe,
   useListAthletes,
+  useListClubs,
   useGetClubPaymentSummary,
   getListPaymentsQueryKey,
   getGetClubPaymentSummaryQueryKey,
@@ -30,7 +31,10 @@ export default function PaymentsPage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { data: user } = useGetMe();
-  const clubId = user?.clubId;
+  const isSuperAdmin = user?.role === "super_admin";
+  const { data: clubs = [] } = useListClubs({ query: { enabled: isSuperAdmin } });
+  const [selectedClubId, setSelectedClubId] = useState<number | undefined>();
+  const clubId = user?.clubId ?? selectedClubId;
 
   const { data: payments = [], isLoading } = useListPayments(
     clubId ? { clubId } : {}
@@ -130,6 +134,17 @@ export default function PaymentsPage() {
                 <DialogTitle>{t("AddPayment")}</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
+                {isSuperAdmin && (
+                  <div className="space-y-2">
+                    <Label>Клуб *</Label>
+                    <Select value={selectedClubId ? String(selectedClubId) : ""} onValueChange={v => setSelectedClubId(Number(v))}>
+                      <SelectTrigger><SelectValue placeholder="Выберите клуб" /></SelectTrigger>
+                      <SelectContent>
+                        {clubs.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label>{t("Athletes")} *</Label>
                   <Select value={form.athleteId} onValueChange={v => setForm(f => ({ ...f, athleteId: v }))}>

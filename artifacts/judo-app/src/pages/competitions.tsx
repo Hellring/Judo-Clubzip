@@ -7,6 +7,7 @@ import {
   useCreateCompetition,
   useDeleteCompetition,
   useGetMe,
+  useListClubs,
   getListCompetitionsQueryKey,
 } from "@workspace/api-client-react";
 import Layout from "@/components/layout";
@@ -27,8 +28,13 @@ export default function CompetitionsPage() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const { data: user } = useGetMe();
+  const isSuperAdmin = user?.role === "super_admin";
+  const { data: clubs = [] } = useListClubs({ query: { enabled: isSuperAdmin } });
+  const [selectedClubId, setSelectedClubId] = useState<number | undefined>();
+  const effectiveClubId = user?.clubId ?? selectedClubId;
+
   const { data: competitions = [], isLoading } = useListCompetitions(
-    user?.clubId ? { clubId: user.clubId } : {}
+    effectiveClubId ? { clubId: effectiveClubId } : {}
   );
   const createCompetition = useCreateCompetition();
   const deleteCompetition = useDeleteCompetition();
@@ -42,11 +48,11 @@ export default function CompetitionsPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user?.clubId) return;
+    if (!effectiveClubId) return;
     createCompetition.mutate(
       {
         data: {
-          clubId: user.clubId,
+          clubId: effectiveClubId,
           name: form.name,
           date: form.date,
           location: form.location || undefined,
@@ -99,6 +105,17 @@ export default function CompetitionsPage() {
                 <DialogTitle>{t("AddCompetition")}</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
+                {isSuperAdmin && (
+                  <div className="space-y-2">
+                    <Label>Клуб *</Label>
+                    <Select value={selectedClubId ? String(selectedClubId) : ""} onValueChange={v => setSelectedClubId(Number(v))}>
+                      <SelectTrigger><SelectValue placeholder="Выберите клуб" /></SelectTrigger>
+                      <SelectContent>
+                        {clubs.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label>{t("Name")} *</Label>
                   <Input data-testid="input-comp-name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
