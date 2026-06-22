@@ -154,6 +154,28 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/UserAdmin"
+    delete:
+      operationId: deleteAdminUser
+      tags: [admin]
+      summary: Delete user permanently (super_admin only)
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        "404":
+          description: User not found
 
   /clubs:
     get:

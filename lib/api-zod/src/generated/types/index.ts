@@ -35,6 +35,7 @@ export * from './competitionUpdateStatus';
 export * from './createAdminUser400';
 export * from './createUserInput';
 export * from './createUserInputRole';
+export * from './deleteAdminUser200';
 export * from './fight';
 export * from './fightDetail';
 export * from './fightDetailStatus';

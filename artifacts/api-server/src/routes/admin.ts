@@ -104,6 +104,25 @@ router.post("/users", async (req, res) => {
   }
 });
 
+router.delete("/users/:userId", async (req, res) => {
+  if (!(await isSuperAdmin(req))) return res.status(403).json({ error: "Forbidden" });
+
+  const userId = parseInt(req.params.userId as string);
+  const user = await db.query.usersTable.findFirst({ where: eq(usersTable.id, userId) });
+  if (!user) return res.status(404).json({ error: "User not found" });
+
+  try {
+    await clerkClient.users.deleteUser(user.clerkId);
+  } catch (err: any) {
+    const msg = err?.errors?.[0]?.message ?? err?.message ?? "Failed to delete user in Clerk";
+    return res.status(400).json({ error: msg });
+  }
+
+  await db.delete(usersTable).where(eq(usersTable.id, userId));
+
+  return res.status(200).json({ success: true });
+});
+
 router.post("/invitations", async (req, res) => {
   if (!(await isSuperAdmin(req))) return res.status(403).json({ error: "Forbidden" });
 
