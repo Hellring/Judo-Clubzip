@@ -8,4 +8,6 @@
 
 export interface GenerateBracketInput {
   categoryId: number;
+  separateClubs?: boolean;
+  tatamiCount?: number;
 }

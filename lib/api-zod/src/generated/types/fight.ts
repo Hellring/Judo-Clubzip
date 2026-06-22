@@ -32,6 +32,8 @@ export interface Fight {
   /** @nullable */
   position?: number | null;
   /** @nullable */
+  tatami?: number | null;
+  /** @nullable */
   startedAt?: string | null;
   /** @nullable */
   finishedAt?: string | null;
