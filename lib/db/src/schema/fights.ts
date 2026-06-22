@@ -18,6 +18,7 @@ export const fightsTable = pgTable("fights", {
   status: text("status", { enum: ["pending", "in_progress", "finished"] }).notNull().default("pending"),
   round: integer("round"),
   position: integer("position"),
+  tatami: integer("tatami"),
   startedAt: text("started_at"),
   finishedAt: text("finished_at"),
   durationSeconds: integer("duration_seconds"),

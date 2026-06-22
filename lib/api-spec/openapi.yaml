@@ -1784,6 +1784,10 @@ components:
       properties:
         categoryId:
           type: integer
+        separateClubs:
+          type: boolean
+        tatamiCount:
+          type: integer
       required:
         - categoryId
 
@@ -1824,6 +1828,8 @@ components:
         round:
           type: ["integer", "null"]
         position:
+          type: ["integer", "null"]
+        tatami:
           type: ["integer", "null"]
         startedAt:
           type: ["string", "null"]

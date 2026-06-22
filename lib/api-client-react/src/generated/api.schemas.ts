@@ -452,6 +452,8 @@ export interface ParticipantInput {
 
 export interface GenerateBracketInput {
   categoryId: number;
+  separateClubs?: boolean;
+  tatamiCount?: number;
 }
 
 export type FightStatus = typeof FightStatus[keyof typeof FightStatus];
@@ -486,6 +488,8 @@ export interface Fight {
   round?: number | null;
   /** @nullable */
   position?: number | null;
+  /** @nullable */
+  tatami?: number | null;
   /** @nullable */
   startedAt?: string | null;
   /** @nullable */

@@ -199,7 +199,11 @@ router.delete("/:competitionId/participants/:participantId", requireAuth(), asyn
 // Generate bracket
 router.post("/:competitionId/generate-bracket", requireAuth(), async (req, res) => {
   const competitionId = parseInt(req.params.competitionId as string);
-  const { categoryId } = req.body;
+  const { categoryId, separateClubs = false, tatamiCount = 1 } = req.body as {
+    categoryId?: number;
+    separateClubs?: boolean;
+    tatamiCount?: number;
+  };
   if (!categoryId) return res.status(400).json({ error: "categoryId is required" });
 
   const comp = await db.query.competitionsTable.findFirst({
@@ -227,30 +231,60 @@ router.post("/:competitionId/generate-bracket", requireAuth(), async (req, res) 
       )
     );
 
-  const athleteIds = participants.map((p) => p.athleteId);
-  const shuffled = [...athleteIds].sort(() => Math.random() - 0.5);
+  // Load athletes to get club info for separation
+  const athleteData = await Promise.all(
+    participants.map(async (p) => {
+      const athlete = await db.query.athletesTable.findFirst({ where: eq(athletesTable.id, p.athleteId) });
+      return { athleteId: p.athleteId, seed: p.seed, clubId: athlete?.clubId ?? null };
+    })
+  );
+
+  // Sort by seed (seeded athletes first, then randomize unseeded)
+  const seeded = athleteData.filter(a => a.seed != null).sort((a, b) => (a.seed ?? 99) - (b.seed ?? 99));
+  const unseeded = athleteData.filter(a => a.seed == null).sort(() => Math.random() - 0.5);
+  const ordered = [...seeded, ...unseeded];
+
+  // Club separation: shuffle so same-club athletes are spread across bracket
+  function separateByClub(athletes: typeof ordered): typeof ordered {
+    if (!separateClubs) return athletes;
+    // Place athletes alternating clubs to minimize first-round same-club matchups
+    const result: typeof ordered = [];
+    const remaining = [...athletes];
+    while (remaining.length > 0) {
+      const lastClub = result.length > 0 ? result[result.length - 1].clubId : null;
+      const diffClubIdx = remaining.findIndex(a => a.clubId !== lastClub);
+      if (diffClubIdx >= 0) {
+        result.push(...remaining.splice(diffClubIdx, 1));
+      } else {
+        result.push(...remaining.splice(0, 1));
+      }
+    }
+    return result;
+  }
+
+  const arranged = separateByClub(ordered);
+  const athleteIds = arranged.map(a => a.athleteId);
+  const numTatami = Math.max(1, Math.min(tatamiCount, 10));
   const fights: (typeof fightsTable.$inferSelect)[] = [];
 
   if (comp.format === "olympic") {
     // Single elimination bracket
     const rounds: number[][][] = [];
-    let current = shuffled;
-    let round = 1;
+    let current = athleteIds;
     while (current.length > 1) {
       const roundFights: number[][] = [];
       for (let i = 0; i < current.length - 1; i += 2) {
         roundFights.push([current[i], current[i + 1]]);
       }
       if (current.length % 2 === 1) {
-        // Bye - carry last athlete forward
         roundFights.push([current[current.length - 1], -1]);
       }
       rounds.push(roundFights);
-      current = roundFights.map(() => -1); // placeholder for next round
-      round++;
+      current = roundFights.map(() => -1);
     }
 
     let position = 1;
+    let tatamiCounter = 1;
     for (let r = 0; r < rounds.length; r++) {
       for (const [a1, a2] of rounds[r]) {
         const [fight] = await db
@@ -262,6 +296,7 @@ router.post("/:competitionId/generate-bracket", requireAuth(), async (req, res) 
             athlete2Id: a2 > 0 ? a2 : null,
             round: r + 1,
             position: position++,
+            tatami: ((tatamiCounter++ - 1) % numTatami) + 1,
           })
           .returning();
         fights.push(fight);
@@ -270,17 +305,19 @@ router.post("/:competitionId/generate-bracket", requireAuth(), async (req, res) 
   } else {
     // Round robin — every athlete fights every other athlete
     let position = 1;
-    for (let i = 0; i < shuffled.length; i++) {
-      for (let j = i + 1; j < shuffled.length; j++) {
+    let tatamiCounter = 1;
+    for (let i = 0; i < athleteIds.length; i++) {
+      for (let j = i + 1; j < athleteIds.length; j++) {
         const [fight] = await db
           .insert(fightsTable)
           .values({
             competitionId,
             categoryId,
-            athlete1Id: shuffled[i],
-            athlete2Id: shuffled[j],
+            athlete1Id: athleteIds[i],
+            athlete2Id: athleteIds[j],
             round: 1,
             position: position++,
+            tatami: ((tatamiCounter++ - 1) % numTatami) + 1,
           })
           .returning();
         fights.push(fight);

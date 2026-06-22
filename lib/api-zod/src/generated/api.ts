@@ -963,7 +963,9 @@ export const GenerateBracketParams = zod.object({
 })
 
 export const GenerateBracketBody = zod.object({
-  "categoryId": zod.number()
+  "categoryId": zod.number(),
+  "separateClubs": zod.boolean().optional(),
+  "tatamiCount": zod.number().optional()
 })
 
 export const GenerateBracketResponseItem = zod.object({
@@ -1012,6 +1014,7 @@ export const GenerateBracketResponseItem = zod.object({
   "status": zod.enum(['pending', 'in_progress', 'finished']),
   "round": zod.number().nullish(),
   "position": zod.number().nullish(),
+  "tatami": zod.number().nullish(),
   "startedAt": zod.string().nullish(),
   "finishedAt": zod.string().nullish(),
   "durationSeconds": zod.number().nullish()
@@ -1072,6 +1075,7 @@ export const ListFightsResponseItem = zod.object({
   "status": zod.enum(['pending', 'in_progress', 'finished']),
   "round": zod.number().nullish(),
   "position": zod.number().nullish(),
+  "tatami": zod.number().nullish(),
   "startedAt": zod.string().nullish(),
   "finishedAt": zod.string().nullish(),
   "durationSeconds": zod.number().nullish()
@@ -1210,6 +1214,7 @@ export const UpdateFightResponse = zod.object({
   "status": zod.enum(['pending', 'in_progress', 'finished']),
   "round": zod.number().nullish(),
   "position": zod.number().nullish(),
+  "tatami": zod.number().nullish(),
   "startedAt": zod.string().nullish(),
   "finishedAt": zod.string().nullish(),
   "durationSeconds": zod.number().nullish()
@@ -1269,6 +1274,7 @@ export const StartFightResponse = zod.object({
   "status": zod.enum(['pending', 'in_progress', 'finished']),
   "round": zod.number().nullish(),
   "position": zod.number().nullish(),
+  "tatami": zod.number().nullish(),
   "startedAt": zod.string().nullish(),
   "finishedAt": zod.string().nullish(),
   "durationSeconds": zod.number().nullish()
@@ -1333,6 +1339,7 @@ export const FinishFightResponse = zod.object({
   "status": zod.enum(['pending', 'in_progress', 'finished']),
   "round": zod.number().nullish(),
   "position": zod.number().nullish(),
+  "tatami": zod.number().nullish(),
   "startedAt": zod.string().nullish(),
   "finishedAt": zod.string().nullish(),
   "durationSeconds": zod.number().nullish()

@@ -28,7 +28,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Plus, Swords, Users, GitBranch, RefreshCw, Copy, Settings2 } from "lucide-react";
+import { ArrowLeft, Plus, Swords, Users, GitBranch, RefreshCw, Copy, Settings2, SlidersHorizontal, Shield } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 function StatusBadge({ status }: { status: string }) {
   const { t } = useTranslation();
@@ -340,9 +341,11 @@ export default function CompetitionDetailPage() {
   const [catForm, setCatForm] = useState({ name: "", gender: "male", maxWeightKg: "" });
 
   const [participantOpen, setParticipantOpen] = useState(false);
-  const [pForm, setPForm] = useState({ athleteId: "", categoryId: "" });
+  const [pForm, setPForm] = useState({ athleteId: "", categoryId: "", seed: "" });
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  const [bracketOptions, setBracketOptions] = useState({ separateClubs: false, tatamiCount: "1" });
+  const [activeTatamiFilter, setActiveTatamiFilter] = useState<number | null>(null);
 
   const handleCreateCategory = (e: React.FormEvent) => {
     e.preventDefault();
@@ -361,12 +364,19 @@ export default function CompetitionDetailPage() {
   const handleAddParticipant = (e: React.FormEvent) => {
     e.preventDefault();
     addParticipant.mutate(
-      { competitionId: id, data: { athleteId: parseInt(pForm.athleteId), categoryId: parseInt(pForm.categoryId) } },
+      {
+        competitionId: id,
+        data: {
+          athleteId: parseInt(pForm.athleteId),
+          categoryId: parseInt(pForm.categoryId),
+          seed: pForm.seed ? parseInt(pForm.seed) : undefined,
+        }
+      },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListParticipantsQueryKey(id) });
           setParticipantOpen(false);
-          setPForm({ athleteId: "", categoryId: "" });
+          setPForm({ athleteId: "", categoryId: "", seed: "" });
         }
       }
     );
@@ -375,10 +385,18 @@ export default function CompetitionDetailPage() {
   const handleGenerateBracket = () => {
     if (!selectedCategoryId) return;
     generateBracket.mutate(
-      { competitionId: id, data: { categoryId: selectedCategoryId } },
+      {
+        competitionId: id,
+        data: {
+          categoryId: selectedCategoryId,
+          separateClubs: bracketOptions.separateClubs,
+          tatamiCount: parseInt(bracketOptions.tatamiCount) || 1,
+        }
+      },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListFightsQueryKey(id) });
+          setActiveTatamiFilter(null);
         }
       }
     );
@@ -511,6 +529,17 @@ export default function CompetitionDetailPage() {
                         </SelectContent>
                       </Select>
                     </div>
+                    <div className="space-y-2">
+                      <Label>Посев (необязательно)</Label>
+                      <Input
+                        type="number"
+                        min={1}
+                        placeholder="1, 2, 3..."
+                        value={pForm.seed}
+                        onChange={e => setPForm(f => ({ ...f, seed: e.target.value }))}
+                      />
+                      <p className="text-xs text-muted-foreground">Спортсмен с посевом 1 попадает в начало сетки</p>
+                    </div>
                     <div className="flex justify-end gap-2">
                       <Button type="button" variant="outline" onClick={() => setParticipantOpen(false)}>{t("Cancel")}</Button>
                       <Button type="submit" data-testid="button-submit-participant">{t("Save")}</Button>
@@ -575,7 +604,7 @@ export default function CompetitionDetailPage() {
                 <Label className="text-sm">Категория:</Label>
                 <Select
                   value={selectedCategoryId ? String(selectedCategoryId) : "all"}
-                  onValueChange={v => setSelectedCategoryId(v === "all" ? null : parseInt(v))}
+                  onValueChange={v => { setSelectedCategoryId(v === "all" ? null : parseInt(v)); setActiveTatamiFilter(null); }}
                 >
                   <SelectTrigger className="w-44" data-testid="select-bracket-category">
                     <SelectValue />
@@ -592,16 +621,48 @@ export default function CompetitionDetailPage() {
                 </Select>
               </div>
               {selectedCategoryId && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleGenerateBracket}
-                  disabled={generateBracket.isPending}
-                  data-testid="button-generate-bracket"
-                >
-                  <RefreshCw className={`h-4 w-4 mr-1 ${generateBracket.isPending ? "animate-spin" : ""}`} />
-                  {t("GenerateBracket")}
-                </Button>
+                <>
+                  {/* Bracket generation options */}
+                  <div className="flex items-center gap-3 border rounded-lg px-3 py-2 bg-muted/30">
+                    <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        id="separate-clubs"
+                        checked={bracketOptions.separateClubs}
+                        onCheckedChange={v => setBracketOptions(o => ({ ...o, separateClubs: v }))}
+                      />
+                      <Label htmlFor="separate-clubs" className="text-xs cursor-pointer flex items-center gap-1">
+                        <Shield className="h-3 w-3" /> Развести по клубам
+                      </Label>
+                    </div>
+                    <div className="flex items-center gap-2 border-l pl-3">
+                      <Label className="text-xs text-muted-foreground">Татами:</Label>
+                      <Select
+                        value={bracketOptions.tatamiCount}
+                        onValueChange={v => setBracketOptions(o => ({ ...o, tatamiCount: v }))}
+                      >
+                        <SelectTrigger className="h-7 w-16 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[1,2,3,4,5,6,7,8].map(n => (
+                            <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleGenerateBracket}
+                    disabled={generateBracket.isPending}
+                    data-testid="button-generate-bracket"
+                  >
+                    <RefreshCw className={`h-4 w-4 mr-1 ${generateBracket.isPending ? "animate-spin" : ""}`} />
+                    {t("GenerateBracket")}
+                  </Button>
+                </>
               )}
               {selectedCategoryId && (() => {
                 const cat = categories.find(c => c.id === selectedCategoryId);
@@ -615,42 +676,82 @@ export default function CompetitionDetailPage() {
               })()}
             </div>
 
-            {competition.format === "olympic" ? (
-              <BracketView
-                fights={catFights}
-                onFightClick={f => setLocation(`/competitions/${id}/fight/${f.id}`)}
-              />
-            ) : (
-              <Card>
-                <CardContent className="pt-6">
-                  <RoundRobinTable fights={catFights} participants={catParticipants} />
-                  {catFights.length > 0 && (
-                    <div className="mt-4 space-y-2">
-                      <p className="text-sm font-medium text-muted-foreground">Поединки:</p>
-                      <div className="divide-y">
-                        {catFights.map(f => (
-                          <div
-                            key={f.id}
-                            className="flex items-center justify-between py-2 cursor-pointer hover:bg-muted/30 -mx-2 px-2 rounded"
-                            onClick={() => setLocation(`/competitions/${id}/fight/${f.id}`)}
-                            data-testid={`row-fight-${f.id}`}
-                          >
-                            <span className="text-sm">
-                              {f.athlete1 ? `${f.athlete1.firstName} ${f.athlete1.lastName}` : "—"}
-                              {" "}{t("vs")}{" "}
-                              {f.athlete2 ? `${f.athlete2.firstName} ${f.athlete2.lastName}` : "—"}
-                            </span>
-                            <Badge variant={f.status === "finished" ? "secondary" : f.status === "in_progress" ? "default" : "outline"}>
-                              {f.status}
-                            </Badge>
-                          </div>
-                        ))}
+            {/* Tatami filter buttons */}
+            {(() => {
+              const tatamiNums = [...new Set(catFights.map(f => (f as any).tatami).filter(Boolean))].sort((a,b) => a-b);
+              if (tatamiNums.length <= 1) return null;
+              return (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs text-muted-foreground">Татами:</span>
+                  <Button
+                    size="sm"
+                    variant={activeTatamiFilter === null ? "default" : "outline"}
+                    className="h-7 text-xs"
+                    onClick={() => setActiveTatamiFilter(null)}
+                  >
+                    Все
+                  </Button>
+                  {tatamiNums.map(t => (
+                    <Button
+                      key={t}
+                      size="sm"
+                      variant={activeTatamiFilter === t ? "default" : "outline"}
+                      className="h-7 text-xs"
+                      onClick={() => setActiveTatamiFilter(activeTatamiFilter === t ? null : t)}
+                    >
+                      Татами {t}
+                    </Button>
+                  ))}
+                </div>
+              );
+            })()}
+
+            {(() => {
+              const visibleFights = activeTatamiFilter
+                ? catFights.filter(f => (f as any).tatami === activeTatamiFilter)
+                : catFights;
+              return competition.format === "olympic" ? (
+                <BracketView
+                  fights={visibleFights}
+                  onFightClick={f => setLocation(`/competitions/${id}/fight/${f.id}`)}
+                />
+              ) : (
+                <Card>
+                  <CardContent className="pt-6">
+                    <RoundRobinTable fights={catFights} participants={catParticipants} />
+                    {visibleFights.length > 0 && (
+                      <div className="mt-4 space-y-2">
+                        <p className="text-sm font-medium text-muted-foreground">Поединки:</p>
+                        <div className="divide-y">
+                          {visibleFights.map(f => (
+                            <div
+                              key={f.id}
+                              className="flex items-center justify-between py-2 cursor-pointer hover:bg-muted/30 -mx-2 px-2 rounded"
+                              onClick={() => setLocation(`/competitions/${id}/fight/${f.id}`)}
+                              data-testid={`row-fight-${f.id}`}
+                            >
+                              <div className="flex flex-col">
+                                <span className="text-sm">
+                                  {f.athlete1 ? `${f.athlete1.firstName} ${f.athlete1.lastName}` : "—"}
+                                  {" "}{t("vs")}{" "}
+                                  {f.athlete2 ? `${f.athlete2.firstName} ${f.athlete2.lastName}` : "—"}
+                                </span>
+                                {(f as any).tatami && (
+                                  <span className="text-xs text-muted-foreground">Татами {(f as any).tatami}</span>
+                                )}
+                              </div>
+                              <Badge variant={f.status === "finished" ? "secondary" : f.status === "in_progress" ? "default" : "outline"}>
+                                {f.status}
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })()}
           </TabsContent>
         </Tabs>
       </div>
