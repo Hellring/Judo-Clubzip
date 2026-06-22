@@ -116,6 +116,18 @@ export const UpdateAdminUserResponse = zod.object({
 
 
 /**
+ * @summary Delete user permanently (super_admin only)
+ */
+export const DeleteAdminUserParams = zod.object({
+  "userId": zod.coerce.number()
+})
+
+export const DeleteAdminUserResponse = zod.object({
+  "success": zod.boolean().optional()
+})
+
+
+/**
  * @summary List all clubs
  */
 export const ListClubsResponseItem = zod.object({

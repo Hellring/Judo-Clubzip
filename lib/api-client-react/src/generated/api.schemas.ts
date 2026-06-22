@@ -719,6 +719,10 @@ export type CreateAdminUser400 = {
   error?: string;
 };
 
+export type DeleteAdminUser200 = {
+  success?: boolean;
+};
+
 export type ListAthletesParams = {
 clubId?: number;
 };

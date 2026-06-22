@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useListAdminUsers, useUpdateAdminUser, useListClubs, useCreateInvitation, useCreateAdminUser } from "@workspace/api-client-react";
+import { useListAdminUsers, useUpdateAdminUser, useDeleteAdminUser, useListClubs, useCreateInvitation, useCreateAdminUser } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import Layout from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Shield, CheckCircle, Mail, Send, UserPlus } from "lucide-react";
+import { Shield, CheckCircle, Mail, Send, UserPlus, Trash2 } from "lucide-react";
 
 const ROLES = ["super_admin", "club_admin", "coach", "athlete", "parent"] as const;
 type Role = typeof ROLES[number];
@@ -34,14 +34,17 @@ interface UserRowProps {
   };
   clubs: { id: number; name: string }[];
   onSave: (userId: number, role: Role, clubId: number | null) => void;
+  onDelete: (userId: number) => void;
   saving: boolean;
   saved: boolean;
+  deleting: boolean;
 }
 
-function UserRow({ user, clubs, onSave, saving, saved }: UserRowProps) {
+function UserRow({ user, clubs, onSave, onDelete, saving, saved, deleting }: UserRowProps) {
   const { t } = useTranslation();
   const [role, setRole] = useState<Role>(user.role as Role);
   const [clubId, setClubId] = useState<string>(user.clubId?.toString() ?? "none");
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const changed = role !== user.role || (user.clubId?.toString() ?? "none") !== clubId;
 
   return (
@@ -97,6 +100,33 @@ function UserRow({ user, clubs, onSave, saving, saved }: UserRowProps) {
         <Badge variant={roleBadgeVariant(user.role)} className="text-xs">
           {t(user.role as any)}
         </Badge>
+
+        {confirmDelete ? (
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-destructive">Удалить?</span>
+            <Button
+              size="sm"
+              variant="destructive"
+              disabled={deleting}
+              onClick={() => { onDelete(user.id); setConfirmDelete(false); }}
+            >
+              {deleting ? "..." : "Да"}
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setConfirmDelete(false)}>
+              Нет
+            </Button>
+          </div>
+        ) : (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            onClick={() => setConfirmDelete(true)}
+            data-testid={`btn-delete-user-${user.id}`}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -130,7 +160,7 @@ function CreateUserSection({ clubs }: { clubs: { id: number; name: string }[] })
         onSuccess: () => {
           setResult({ type: "success", message: `Пользователь ${form.email} создан.` });
           setForm({ email: "", password: "", firstName: "", lastName: "", role: "coach", clubId: "none" });
-          queryClient.invalidateQueries({ queryKey: ["listAdminUsers"] });
+          queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
         },
         onError: (err: any) => {
           const msg = err?.response?.data?.error ?? "Не удалось создать пользователя.";
@@ -279,7 +309,10 @@ export default function AdminPage() {
   const users = (Array.isArray(usersRaw) ? usersRaw : []) as NonNullable<typeof usersRaw>;
   const { data: clubs = [] } = useListClubs();
   const updateUser = useUpdateAdminUser();
+  const deleteUser = useDeleteAdminUser();
   const [savedIds, setSavedIds] = useState<Set<number>>(new Set());
+
+  const QUERY_KEY = ["/api/admin/users"];
 
   const handleSave = (userId: number, role: string, clubId: number | null) => {
     updateUser.mutate(
@@ -292,7 +325,18 @@ export default function AdminPage() {
             next.delete(userId);
             return next;
           }), 2000);
-          queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+          queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+        }
+      }
+    );
+  };
+
+  const handleDelete = (userId: number) => {
+    deleteUser.mutate(
+      { userId },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: QUERY_KEY });
         }
       }
     );
@@ -332,8 +376,10 @@ export default function AdminPage() {
                     user={user}
                     clubs={clubs as { id: number; name: string }[]}
                     onSave={handleSave}
+                    onDelete={handleDelete}
                     saving={updateUser.isPending}
                     saved={savedIds.has(user.id)}
+                    deleting={deleteUser.isPending}
                   />
                 ))}
               </div>
