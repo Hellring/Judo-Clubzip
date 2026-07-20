@@ -6,14 +6,20 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { FightUpdateStatus } from './fightUpdateStatus';
+import type { FightUpdateWinMethod } from './fightUpdateWinMethod';
 
 export interface FightUpdate {
   athlete1Ippon?: number;
   athlete1WazaAri?: number;
+  athlete1Yuko?: number;
   athlete1Shido?: number;
   athlete2Ippon?: number;
   athlete2WazaAri?: number;
+  athlete2Yuko?: number;
   athlete2Shido?: number;
+  athlete1NoShow?: boolean;
+  athlete2NoShow?: boolean;
+  winMethod?: FightUpdateWinMethod;
   winnerId?: number;
   status?: FightUpdateStatus;
 }

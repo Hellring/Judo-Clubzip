@@ -789,6 +789,7 @@ export const GetCompetitionResponse = zod.object({
   "competitionId": zod.number(),
   "name": zod.string(),
   "gender": zod.enum(['male', 'female', 'mixed']),
+  "minWeightKg": zod.number().nullish(),
   "maxWeightKg": zod.number().nullish(),
   "durationSeconds": zod.number().nullish(),
   "wazaAriForIppon": zod.number(),
@@ -849,6 +850,7 @@ export const ListWeightCategoriesResponseItem = zod.object({
   "competitionId": zod.number(),
   "name": zod.string(),
   "gender": zod.enum(['male', 'female', 'mixed']),
+  "minWeightKg": zod.number().nullish(),
   "maxWeightKg": zod.number().nullish(),
   "durationSeconds": zod.number().nullish(),
   "wazaAriForIppon": zod.number(),
@@ -867,6 +869,7 @@ export const CreateWeightCategoryParams = zod.object({
 export const CreateWeightCategoryBody = zod.object({
   "name": zod.string(),
   "gender": zod.enum(['male', 'female', 'mixed']),
+  "minWeightKg": zod.number().optional(),
   "maxWeightKg": zod.number().optional(),
   "durationSeconds": zod.number().optional(),
   "wazaAriForIppon": zod.number().optional()
@@ -883,7 +886,9 @@ export const UpdateWeightCategoryParams = zod.object({
 
 export const UpdateWeightCategoryBody = zod.object({
   "durationSeconds": zod.number().nullish(),
-  "wazaAriForIppon": zod.number().optional()
+  "wazaAriForIppon": zod.number().optional(),
+  "minWeightKg": zod.number().nullish(),
+  "maxWeightKg": zod.number().nullish()
 })
 
 export const UpdateWeightCategoryResponse = zod.object({
@@ -891,6 +896,7 @@ export const UpdateWeightCategoryResponse = zod.object({
   "competitionId": zod.number(),
   "name": zod.string(),
   "gender": zod.enum(['male', 'female', 'mixed']),
+  "minWeightKg": zod.number().nullish(),
   "maxWeightKg": zod.number().nullish(),
   "durationSeconds": zod.number().nullish(),
   "wazaAriForIppon": zod.number(),
@@ -1020,6 +1026,9 @@ export const GenerateBracketResponseItem = zod.object({
   "athlete2WazaAri": zod.number(),
   "athlete2Yuko": zod.number(),
   "athlete2Shido": zod.number(),
+  "athlete1NoShow": zod.boolean(),
+  "athlete2NoShow": zod.boolean(),
+  "winMethod": zod.union([zod.literal('ippon'),zod.literal('waza_ari'),zod.literal('yuko'),zod.literal('hansoku_make'),zod.literal('no_show'),zod.literal('points'),zod.literal(null)]).nullish(),
   "status": zod.enum(['pending', 'in_progress', 'finished']),
   "round": zod.number().nullish(),
   "position": zod.number().nullish(),
@@ -1029,6 +1038,131 @@ export const GenerateBracketResponseItem = zod.object({
   "durationSeconds": zod.number().nullish()
 })
 export const GenerateBracketResponse = zod.array(GenerateBracketResponseItem)
+
+
+/**
+ * @summary List weigh-ins for a competition
+ */
+export const ListWeighInsParams = zod.object({
+  "competitionId": zod.coerce.number()
+})
+
+export const ListWeighInsResponseItem = zod.object({
+  "id": zod.number(),
+  "competitionId": zod.number(),
+  "participantId": zod.number(),
+  "athleteId": zod.number(),
+  "actualWeightKg": zod.number().nullish(),
+  "passed": zod.boolean(),
+  "weighedAt": zod.string().nullish(),
+  "athlete": zod.object({
+  "id": zod.number(),
+  "clubId": zod.number(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "birthDate": zod.string().nullish(),
+  "gender": zod.enum(['male', 'female']),
+  "weightKg": zod.number().nullish(),
+  "belt": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "parentName": zod.string().nullish(),
+  "parentPhone": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.string()
+}).optional()
+})
+export const ListWeighInsResponse = zod.array(ListWeighInsResponseItem)
+
+
+/**
+ * @summary Create or update a weigh-in record
+ */
+export const UpsertWeighInParams = zod.object({
+  "competitionId": zod.coerce.number()
+})
+
+export const UpsertWeighInBody = zod.object({
+  "participantId": zod.number(),
+  "athleteId": zod.number(),
+  "actualWeightKg": zod.number().optional(),
+  "passed": zod.boolean().optional()
+})
+
+export const UpsertWeighInResponse = zod.object({
+  "id": zod.number(),
+  "competitionId": zod.number(),
+  "participantId": zod.number(),
+  "athleteId": zod.number(),
+  "actualWeightKg": zod.number().nullish(),
+  "passed": zod.boolean(),
+  "weighedAt": zod.string().nullish(),
+  "athlete": zod.object({
+  "id": zod.number(),
+  "clubId": zod.number(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "birthDate": zod.string().nullish(),
+  "gender": zod.enum(['male', 'female']),
+  "weightKg": zod.number().nullish(),
+  "belt": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "parentName": zod.string().nullish(),
+  "parentPhone": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.string()
+}).optional()
+})
+
+
+/**
+ * @summary Auto-assign athletes to weight categories based on weigh-in
+ */
+export const AutoAssignCategoriesParams = zod.object({
+  "competitionId": zod.coerce.number()
+})
+
+export const AutoAssignCategoriesResponse = zod.object({
+  "assigned": zod.number(),
+  "skipped": zod.number()
+})
+
+
+/**
+ * @summary Get round-robin standings for a weight category
+ */
+export const GetProtocolParams = zod.object({
+  "competitionId": zod.coerce.number(),
+  "categoryId": zod.coerce.number()
+})
+
+export const GetProtocolResponseItem = zod.object({
+  "place": zod.number(),
+  "athleteId": zod.number(),
+  "participantId": zod.number(),
+  "athlete": zod.object({
+  "id": zod.number(),
+  "clubId": zod.number(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "birthDate": zod.string().nullish(),
+  "gender": zod.enum(['male', 'female']),
+  "weightKg": zod.number().nullish(),
+  "belt": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "parentName": zod.string().nullish(),
+  "parentPhone": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.string()
+}).optional(),
+  "wins": zod.number(),
+  "losses": zod.number(),
+  "fightCount": zod.number(),
+  "points": zod.number(),
+  "totalIppons": zod.number(),
+  "totalWazaAri": zod.number(),
+  "totalYuko": zod.number()
+})
+export const GetProtocolResponse = zod.array(GetProtocolResponseItem)
 
 
 /**
@@ -1083,6 +1217,9 @@ export const ListFightsResponseItem = zod.object({
   "athlete2WazaAri": zod.number(),
   "athlete2Yuko": zod.number(),
   "athlete2Shido": zod.number(),
+  "athlete1NoShow": zod.boolean(),
+  "athlete2NoShow": zod.boolean(),
+  "winMethod": zod.union([zod.literal('ippon'),zod.literal('waza_ari'),zod.literal('yuko'),zod.literal('hansoku_make'),zod.literal('no_show'),zod.literal('points'),zod.literal(null)]).nullish(),
   "status": zod.enum(['pending', 'in_progress', 'finished']),
   "round": zod.number().nullish(),
   "position": zod.number().nullish(),
@@ -1171,10 +1308,15 @@ export const UpdateFightParams = zod.object({
 export const UpdateFightBody = zod.object({
   "athlete1Ippon": zod.number().optional(),
   "athlete1WazaAri": zod.number().optional(),
+  "athlete1Yuko": zod.number().optional(),
   "athlete1Shido": zod.number().optional(),
   "athlete2Ippon": zod.number().optional(),
   "athlete2WazaAri": zod.number().optional(),
+  "athlete2Yuko": zod.number().optional(),
   "athlete2Shido": zod.number().optional(),
+  "athlete1NoShow": zod.boolean().optional(),
+  "athlete2NoShow": zod.boolean().optional(),
+  "winMethod": zod.enum(['ippon', 'waza_ari', 'yuko', 'hansoku_make', 'no_show', 'points']).optional(),
   "winnerId": zod.number().optional(),
   "status": zod.enum(['pending', 'in_progress', 'finished']).optional()
 })
@@ -1224,6 +1366,9 @@ export const UpdateFightResponse = zod.object({
   "athlete2WazaAri": zod.number(),
   "athlete2Yuko": zod.number(),
   "athlete2Shido": zod.number(),
+  "athlete1NoShow": zod.boolean(),
+  "athlete2NoShow": zod.boolean(),
+  "winMethod": zod.union([zod.literal('ippon'),zod.literal('waza_ari'),zod.literal('yuko'),zod.literal('hansoku_make'),zod.literal('no_show'),zod.literal('points'),zod.literal(null)]).nullish(),
   "status": zod.enum(['pending', 'in_progress', 'finished']),
   "round": zod.number().nullish(),
   "position": zod.number().nullish(),
@@ -1286,6 +1431,9 @@ export const StartFightResponse = zod.object({
   "athlete2WazaAri": zod.number(),
   "athlete2Yuko": zod.number(),
   "athlete2Shido": zod.number(),
+  "athlete1NoShow": zod.boolean(),
+  "athlete2NoShow": zod.boolean(),
+  "winMethod": zod.union([zod.literal('ippon'),zod.literal('waza_ari'),zod.literal('yuko'),zod.literal('hansoku_make'),zod.literal('no_show'),zod.literal('points'),zod.literal(null)]).nullish(),
   "status": zod.enum(['pending', 'in_progress', 'finished']),
   "round": zod.number().nullish(),
   "position": zod.number().nullish(),
@@ -1353,6 +1501,9 @@ export const FinishFightResponse = zod.object({
   "athlete2WazaAri": zod.number(),
   "athlete2Yuko": zod.number(),
   "athlete2Shido": zod.number(),
+  "athlete1NoShow": zod.boolean(),
+  "athlete2NoShow": zod.boolean(),
+  "winMethod": zod.union([zod.literal('ippon'),zod.literal('waza_ari'),zod.literal('yuko'),zod.literal('hansoku_make'),zod.literal('no_show'),zod.literal('points'),zod.literal(null)]).nullish(),
   "status": zod.enum(['pending', 'in_progress', 'finished']),
   "round": zod.number().nullish(),
   "position": zod.number().nullish(),

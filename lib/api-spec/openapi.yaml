@@ -984,6 +984,101 @@ paths:
                 items:
                   $ref: "#/components/schemas/Fight"
 
+  /competitions/{competitionId}/weigh-ins:
+    get:
+      operationId: listWeighIns
+      tags: [competitions]
+      summary: List weigh-ins for a competition
+      parameters:
+        - name: competitionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Weigh-in records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WeighIn"
+    post:
+      operationId: upsertWeighIn
+      tags: [competitions]
+      summary: Create or update a weigh-in record
+      parameters:
+        - name: competitionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WeighInInput"
+      responses:
+        "200":
+          description: Updated weigh-in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeighIn"
+        "201":
+          description: Created weigh-in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeighIn"
+
+  /competitions/{competitionId}/auto-assign:
+    post:
+      operationId: autoAssignCategories
+      tags: [competitions]
+      summary: Auto-assign athletes to weight categories based on weigh-in
+      parameters:
+        - name: competitionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Assignment result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AutoAssignResult"
+
+  /competitions/{competitionId}/protocol/{categoryId}:
+    get:
+      operationId: getProtocol
+      tags: [competitions]
+      summary: Get round-robin standings for a weight category
+      parameters:
+        - name: competitionId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: categoryId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Protocol standings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProtocolEntry"
+
   /competitions/{competitionId}/fights:
     get:
       operationId: listFights
@@ -1703,6 +1798,8 @@ components:
         gender:
           type: string
           enum: [male, female, mixed]
+        minWeightKg:
+          type: ["number", "null"]
         maxWeightKg:
           type: ["number", "null"]
         durationSeconds:
@@ -1727,6 +1824,8 @@ components:
         gender:
           type: string
           enum: [male, female, mixed]
+        minWeightKg:
+          type: number
         maxWeightKg:
           type: number
         durationSeconds:
@@ -1744,6 +1843,10 @@ components:
           type: ["integer", "null"]
         wazaAriForIppon:
           type: integer
+        minWeightKg:
+          type: ["number", "null"]
+        maxWeightKg:
+          type: ["number", "null"]
 
     Participant:
       type: object
@@ -1826,6 +1929,13 @@ components:
           type: integer
         athlete2Shido:
           type: integer
+        athlete1NoShow:
+          type: boolean
+        athlete2NoShow:
+          type: boolean
+        winMethod:
+          type: ["string", "null"]
+          enum: [ippon, waza_ari, yuko, hansoku_make, no_show, points, null]
         status:
           type: string
           enum: [pending, in_progress, finished]
@@ -1853,6 +1963,8 @@ components:
         - athlete2WazaAri
         - athlete2Yuko
         - athlete2Shido
+        - athlete1NoShow
+        - athlete2NoShow
         - status
 
     FightUpdate:
@@ -1862,14 +1974,25 @@ components:
           type: integer
         athlete1WazaAri:
           type: integer
+        athlete1Yuko:
+          type: integer
         athlete1Shido:
           type: integer
         athlete2Ippon:
           type: integer
         athlete2WazaAri:
           type: integer
+        athlete2Yuko:
+          type: integer
         athlete2Shido:
           type: integer
+        athlete1NoShow:
+          type: boolean
+        athlete2NoShow:
+          type: boolean
+        winMethod:
+          type: string
+          enum: [ippon, waza_ari, yuko, hansoku_make, no_show, points]
         winnerId:
           type: integer
         status:
@@ -2150,3 +2273,92 @@ components:
       required:
         - success
         - message
+
+    WeighIn:
+      type: object
+      properties:
+        id:
+          type: integer
+        competitionId:
+          type: integer
+        participantId:
+          type: integer
+        athleteId:
+          type: integer
+        actualWeightKg:
+          type: ["number", "null"]
+        passed:
+          type: boolean
+        weighedAt:
+          type: ["string", "null"]
+        athlete:
+          $ref: "#/components/schemas/Athlete"
+      required:
+        - id
+        - competitionId
+        - participantId
+        - athleteId
+        - passed
+
+    WeighInInput:
+      type: object
+      properties:
+        participantId:
+          type: integer
+        athleteId:
+          type: integer
+        actualWeightKg:
+          type: number
+        passed:
+          type: boolean
+      required:
+        - participantId
+        - athleteId
+
+    AutoAssignResult:
+      type: object
+      properties:
+        assigned:
+          type: integer
+        skipped:
+          type: integer
+      required:
+        - assigned
+        - skipped
+
+    ProtocolEntry:
+      type: object
+      properties:
+        place:
+          type: integer
+        athleteId:
+          type: integer
+        participantId:
+          type: integer
+        athlete:
+          $ref: "#/components/schemas/Athlete"
+        wins:
+          type: integer
+        losses:
+          type: integer
+        fightCount:
+          type: integer
+        points:
+          type: integer
+        totalIppons:
+          type: integer
+        totalWazaAri:
+          type: integer
+        totalYuko:
+          type: integer
+      required:
+        - place
+        - athleteId
+        - participantId
+        - wins
+        - losses
+        - fightCount
+        - points
+        - totalIppons
+        - totalWazaAri
+        - totalYuko

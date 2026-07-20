@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, timestamp, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -17,6 +17,9 @@ export const fightsTable = pgTable("fights", {
   athlete2WazaAri: integer("athlete2_waza_ari").notNull().default(0),
   athlete2Yuko: integer("athlete2_yuko").notNull().default(0),
   athlete2Shido: integer("athlete2_shido").notNull().default(0),
+  athlete1NoShow: boolean("athlete1_no_show").notNull().default(false),
+  athlete2NoShow: boolean("athlete2_no_show").notNull().default(false),
+  winMethod: text("win_method", { enum: ["ippon", "waza_ari", "yuko", "hansoku_make", "no_show", "points"] }),
   status: text("status", { enum: ["pending", "in_progress", "finished"] }).notNull().default("pending"),
   round: integer("round"),
   position: integer("position"),

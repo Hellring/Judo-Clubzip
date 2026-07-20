@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, timestamp, real } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, timestamp, real, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -21,6 +21,7 @@ export const weightCategoriesTable = pgTable("weight_categories", {
   competitionId: integer("competition_id").notNull(),
   name: text("name").notNull(),
   gender: text("gender", { enum: ["male", "female", "mixed"] }).notNull(),
+  minWeightKg: real("min_weight_kg"),
   maxWeightKg: real("max_weight_kg"),
   durationSeconds: integer("duration_seconds"),
   wazaAriForIppon: integer("waza_ari_for_ippon").notNull().default(2),
@@ -33,6 +34,20 @@ export const participantsTable = pgTable("participants", {
   categoryId: integer("category_id").notNull(),
   seed: integer("seed"),
 });
+
+export const weighInsTable = pgTable("weigh_ins", {
+  id: serial("id").primaryKey(),
+  competitionId: integer("competition_id").notNull(),
+  participantId: integer("participant_id").notNull(),
+  athleteId: integer("athlete_id").notNull(),
+  actualWeightKg: real("actual_weight_kg"),
+  passed: boolean("passed").notNull().default(false),
+  weighedAt: timestamp("weighed_at"),
+});
+
+export const insertWeighInSchema = createInsertSchema(weighInsTable).omit({ id: true });
+export type InsertWeighIn = z.infer<typeof insertWeighInSchema>;
+export type WeighIn = typeof weighInsTable.$inferSelect;
 
 export const insertCompetitionSchema = createInsertSchema(competitionsTable).omit({ id: true, createdAt: true });
 export type InsertCompetition = z.infer<typeof insertCompetitionSchema>;

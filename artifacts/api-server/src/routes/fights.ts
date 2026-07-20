@@ -52,13 +52,31 @@ router.get("/:fightId", async (req, res) => {
 router.patch("/:fightId", requireAuth(), async (req, res) => {
   const fightId = parseInt(req.params.fightId as string);
   const {
-    athlete1Ippon, athlete1WazaAri, athlete1Shido,
-    athlete2Ippon, athlete2WazaAri, athlete2Shido,
+    athlete1Ippon, athlete1WazaAri, athlete1Yuko, athlete1Shido,
+    athlete2Ippon, athlete2WazaAri, athlete2Yuko, athlete2Shido,
+    athlete1NoShow, athlete2NoShow, winMethod,
     winnerId, status,
   } = req.body;
+  const updateFields: Record<string, unknown> = {};
+  if (athlete1Ippon !== undefined) updateFields.athlete1Ippon = athlete1Ippon;
+  if (athlete1WazaAri !== undefined) updateFields.athlete1WazaAri = athlete1WazaAri;
+  if (athlete1Yuko !== undefined) updateFields.athlete1Yuko = athlete1Yuko;
+  if (athlete1Shido !== undefined) updateFields.athlete1Shido = athlete1Shido;
+  if (athlete2Ippon !== undefined) updateFields.athlete2Ippon = athlete2Ippon;
+  if (athlete2WazaAri !== undefined) updateFields.athlete2WazaAri = athlete2WazaAri;
+  if (athlete2Yuko !== undefined) updateFields.athlete2Yuko = athlete2Yuko;
+  if (athlete2Shido !== undefined) updateFields.athlete2Shido = athlete2Shido;
+  if (athlete1NoShow !== undefined) updateFields.athlete1NoShow = athlete1NoShow;
+  if (athlete2NoShow !== undefined) updateFields.athlete2NoShow = athlete2NoShow;
+  if (winMethod !== undefined) updateFields.winMethod = winMethod;
+  if (winnerId !== undefined) updateFields.winnerId = winnerId;
+  if (status !== undefined) {
+    updateFields.status = status;
+    if (status === "finished") updateFields.finishedAt = new Date().toISOString();
+  }
   const [updated] = await db
     .update(fightsTable)
-    .set({ athlete1Ippon, athlete1WazaAri, athlete1Shido, athlete2Ippon, athlete2WazaAri, athlete2Shido, winnerId, status })
+    .set(updateFields)
     .where(eq(fightsTable.id, fightId))
     .returning();
   if (!updated) return res.status(404).json({ error: "Fight not found" });

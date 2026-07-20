@@ -7,6 +7,7 @@
  */
 import type { Athlete } from './athlete';
 import type { FightStatus } from './fightStatus';
+import type { FightWinMethod } from './fightWinMethod';
 
 export interface Fight {
   id: number;
@@ -28,6 +29,10 @@ export interface Fight {
   athlete2WazaAri: number;
   athlete2Yuko: number;
   athlete2Shido: number;
+  athlete1NoShow: boolean;
+  athlete2NoShow: boolean;
+  /** @nullable */
+  winMethod?: FightWinMethod;
   status: FightStatus;
   /** @nullable */
   round?: number | null;

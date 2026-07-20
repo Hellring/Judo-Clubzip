@@ -24,6 +24,7 @@ import type {
   AthleteInput,
   AthleteStats,
   AthleteUpdate,
+  AutoAssignResult,
   Club,
   ClubInput,
   ClubMember,
@@ -57,10 +58,13 @@ import type {
   PaymentInput,
   PaymentSummary,
   PaymentUpdate,
+  ProtocolEntry,
   User,
   UserAdmin,
   UserAdminUpdate,
   UserUpdate,
+  WeighIn,
+  WeighInInput,
   WeightCategory,
   WeightCategoryInput,
   WeightCategoryUpdate,
@@ -3646,6 +3650,307 @@ export const useGenerateBracket = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getGenerateBracketMutationOptions(options));
     }
+
+export const getListWeighInsUrl = (competitionId: number,) => {
+
+
+
+
+  return `/api/competitions/${competitionId}/weigh-ins`
+}
+
+/**
+ * @summary List weigh-ins for a competition
+ */
+export const listWeighIns = async (competitionId: number, options?: RequestInit): Promise<WeighIn[]> => {
+
+  return customFetch<WeighIn[]>(getListWeighInsUrl(competitionId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListWeighInsQueryKey = (competitionId: number,) => {
+    return [
+    `/api/competitions/${competitionId}/weigh-ins`
+    ] as const;
+    }
+
+
+export const getListWeighInsQueryOptions = <TData = Awaited<ReturnType<typeof listWeighIns>>, TError = ErrorType<unknown>>(competitionId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWeighIns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListWeighInsQueryKey(competitionId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listWeighIns>>> = ({ signal }) => listWeighIns(competitionId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(competitionId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listWeighIns>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListWeighInsQueryResult = NonNullable<Awaited<ReturnType<typeof listWeighIns>>>
+export type ListWeighInsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List weigh-ins for a competition
+ */
+
+export function useListWeighIns<TData = Awaited<ReturnType<typeof listWeighIns>>, TError = ErrorType<unknown>>(
+ competitionId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWeighIns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListWeighInsQueryOptions(competitionId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpsertWeighInUrl = (competitionId: number,) => {
+
+
+
+
+  return `/api/competitions/${competitionId}/weigh-ins`
+}
+
+/**
+ * @summary Create or update a weigh-in record
+ */
+export const upsertWeighIn = async (competitionId: number,
+    weighInInput: WeighInInput, options?: RequestInit): Promise<WeighIn> => {
+
+  return customFetch<WeighIn>(getUpsertWeighInUrl(competitionId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      weighInInput,)
+  }
+);}
+
+
+
+
+export const getUpsertWeighInMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertWeighIn>>, TError,{competitionId: number;data: BodyType<WeighInInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof upsertWeighIn>>, TError,{competitionId: number;data: BodyType<WeighInInput>}, TContext> => {
+
+const mutationKey = ['upsertWeighIn'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof upsertWeighIn>>, {competitionId: number;data: BodyType<WeighInInput>}> = (props) => {
+          const {competitionId,data} = props ?? {};
+
+          return  upsertWeighIn(competitionId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpsertWeighInMutationResult = NonNullable<Awaited<ReturnType<typeof upsertWeighIn>>>
+    export type UpsertWeighInMutationBody = BodyType<WeighInInput>
+    export type UpsertWeighInMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create or update a weigh-in record
+ */
+export const useUpsertWeighIn = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertWeighIn>>, TError,{competitionId: number;data: BodyType<WeighInInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof upsertWeighIn>>,
+        TError,
+        {competitionId: number;data: BodyType<WeighInInput>},
+        TContext
+      > => {
+      return useMutation(getUpsertWeighInMutationOptions(options));
+    }
+
+export const getAutoAssignCategoriesUrl = (competitionId: number,) => {
+
+
+
+
+  return `/api/competitions/${competitionId}/auto-assign`
+}
+
+/**
+ * @summary Auto-assign athletes to weight categories based on weigh-in
+ */
+export const autoAssignCategories = async (competitionId: number, options?: RequestInit): Promise<AutoAssignResult> => {
+
+  return customFetch<AutoAssignResult>(getAutoAssignCategoriesUrl(competitionId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAutoAssignCategoriesMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof autoAssignCategories>>, TError,{competitionId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof autoAssignCategories>>, TError,{competitionId: number}, TContext> => {
+
+const mutationKey = ['autoAssignCategories'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof autoAssignCategories>>, {competitionId: number}> = (props) => {
+          const {competitionId} = props ?? {};
+
+          return  autoAssignCategories(competitionId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AutoAssignCategoriesMutationResult = NonNullable<Awaited<ReturnType<typeof autoAssignCategories>>>
+
+    export type AutoAssignCategoriesMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Auto-assign athletes to weight categories based on weigh-in
+ */
+export const useAutoAssignCategories = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof autoAssignCategories>>, TError,{competitionId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof autoAssignCategories>>,
+        TError,
+        {competitionId: number},
+        TContext
+      > => {
+      return useMutation(getAutoAssignCategoriesMutationOptions(options));
+    }
+
+export const getGetProtocolUrl = (competitionId: number,
+    categoryId: number,) => {
+
+
+
+
+  return `/api/competitions/${competitionId}/protocol/${categoryId}`
+}
+
+/**
+ * @summary Get round-robin standings for a weight category
+ */
+export const getProtocol = async (competitionId: number,
+    categoryId: number, options?: RequestInit): Promise<ProtocolEntry[]> => {
+
+  return customFetch<ProtocolEntry[]>(getGetProtocolUrl(competitionId,categoryId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetProtocolQueryKey = (competitionId: number,
+    categoryId: number,) => {
+    return [
+    `/api/competitions/${competitionId}/protocol/${categoryId}`
+    ] as const;
+    }
+
+
+export const getGetProtocolQueryOptions = <TData = Awaited<ReturnType<typeof getProtocol>>, TError = ErrorType<unknown>>(competitionId: number,
+    categoryId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProtocol>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetProtocolQueryKey(competitionId,categoryId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProtocol>>> = ({ signal }) => getProtocol(competitionId,categoryId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(competitionId && categoryId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProtocol>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetProtocolQueryResult = NonNullable<Awaited<ReturnType<typeof getProtocol>>>
+export type GetProtocolQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get round-robin standings for a weight category
+ */
+
+export function useGetProtocol<TData = Awaited<ReturnType<typeof getProtocol>>, TError = ErrorType<unknown>>(
+ competitionId: number,
+    categoryId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProtocol>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetProtocolQueryOptions(competitionId,categoryId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getListFightsUrl = (competitionId: number,) => {
 
