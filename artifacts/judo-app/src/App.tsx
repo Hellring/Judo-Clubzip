@@ -19,6 +19,7 @@ import CompetitionsPage from "./pages/competitions";
 import CompetitionDetailPage from "./pages/competition-detail";
 import PaymentsPage from "./pages/payments";
 import FightPage from "./pages/fight";
+import RefereePage from "./pages/referee";
 import AdminPage from "./pages/admin";
 import NotFoundPage from "./pages/not-found";
 
@@ -177,6 +178,7 @@ function ClerkProviderWithRoutes() {
           <Route path="/competitions" component={CompetitionsPage} />
           <Route path="/competitions/:competitionId" component={CompetitionDetailPage} />
           <Route path="/competitions/:competitionId/fight/:fightId" component={FightPage} />
+          <Route path="/competitions/:competitionId/referee" component={RefereePage} />
           <Route path="/payments" component={PaymentsPage} />
           <Route path="/admin" component={AdminPage} />
           <Route component={NotFoundPage} />

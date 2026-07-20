@@ -390,6 +390,8 @@ export interface WeightCategory {
   name: string;
   gender: WeightCategoryGender;
   /** @nullable */
+  minWeightKg?: number | null;
+  /** @nullable */
   maxWeightKg?: number | null;
   /** @nullable */
   durationSeconds?: number | null;
@@ -424,6 +426,7 @@ export const WeightCategoryInputGender = {
 export interface WeightCategoryInput {
   name: string;
   gender: WeightCategoryInputGender;
+  minWeightKg?: number;
   maxWeightKg?: number;
   durationSeconds?: number;
   wazaAriForIppon?: number;
@@ -433,6 +436,10 @@ export interface WeightCategoryUpdate {
   /** @nullable */
   durationSeconds?: number | null;
   wazaAriForIppon?: number;
+  /** @nullable */
+  minWeightKg?: number | null;
+  /** @nullable */
+  maxWeightKg?: number | null;
 }
 
 export interface Participant {
@@ -456,6 +463,21 @@ export interface GenerateBracketInput {
   separateClubs?: boolean;
   tatamiCount?: number;
 }
+
+/**
+ * @nullable
+ */
+export type FightWinMethod = typeof FightWinMethod[keyof typeof FightWinMethod] | null;
+
+
+export const FightWinMethod = {
+  ippon: 'ippon',
+  waza_ari: 'waza_ari',
+  yuko: 'yuko',
+  hansoku_make: 'hansoku_make',
+  no_show: 'no_show',
+  points: 'points',
+} as const;
 
 export type FightStatus = typeof FightStatus[keyof typeof FightStatus];
 
@@ -486,6 +508,10 @@ export interface Fight {
   athlete2WazaAri: number;
   athlete2Yuko: number;
   athlete2Shido: number;
+  athlete1NoShow: boolean;
+  athlete2NoShow: boolean;
+  /** @nullable */
+  winMethod?: FightWinMethod;
   status: FightStatus;
   /** @nullable */
   round?: number | null;
@@ -501,6 +527,18 @@ export interface Fight {
   durationSeconds?: number | null;
 }
 
+export type FightUpdateWinMethod = typeof FightUpdateWinMethod[keyof typeof FightUpdateWinMethod];
+
+
+export const FightUpdateWinMethod = {
+  ippon: 'ippon',
+  waza_ari: 'waza_ari',
+  yuko: 'yuko',
+  hansoku_make: 'hansoku_make',
+  no_show: 'no_show',
+  points: 'points',
+} as const;
+
 export type FightUpdateStatus = typeof FightUpdateStatus[keyof typeof FightUpdateStatus];
 
 
@@ -513,10 +551,15 @@ export const FightUpdateStatus = {
 export interface FightUpdate {
   athlete1Ippon?: number;
   athlete1WazaAri?: number;
+  athlete1Yuko?: number;
   athlete1Shido?: number;
   athlete2Ippon?: number;
   athlete2WazaAri?: number;
+  athlete2Yuko?: number;
   athlete2Shido?: number;
+  athlete1NoShow?: boolean;
+  athlete2NoShow?: boolean;
+  winMethod?: FightUpdateWinMethod;
   winnerId?: number;
   status?: FightUpdateStatus;
 }
@@ -731,6 +774,45 @@ export interface InvitationInput {
 export interface InvitationResult {
   success: boolean;
   message: string;
+}
+
+export interface WeighIn {
+  id: number;
+  competitionId: number;
+  participantId: number;
+  athleteId: number;
+  /** @nullable */
+  actualWeightKg?: number | null;
+  passed: boolean;
+  /** @nullable */
+  weighedAt?: string | null;
+  athlete?: Athlete;
+}
+
+export interface WeighInInput {
+  participantId: number;
+  athleteId: number;
+  actualWeightKg?: number;
+  passed?: boolean;
+}
+
+export interface AutoAssignResult {
+  assigned: number;
+  skipped: number;
+}
+
+export interface ProtocolEntry {
+  place: number;
+  athleteId: number;
+  participantId: number;
+  athlete?: Athlete;
+  wins: number;
+  losses: number;
+  fightCount: number;
+  points: number;
+  totalIppons: number;
+  totalWazaAri: number;
+  totalYuko: number;
 }
 
 export type CreateAdminUser400 = {

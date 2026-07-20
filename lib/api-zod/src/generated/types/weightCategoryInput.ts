@@ -10,6 +10,7 @@ import type { WeightCategoryInputGender } from './weightCategoryInputGender';
 export interface WeightCategoryInput {
   name: string;
   gender: WeightCategoryInputGender;
+  minWeightKg?: number;
   maxWeightKg?: number;
   durationSeconds?: number;
   wazaAriForIppon?: number;

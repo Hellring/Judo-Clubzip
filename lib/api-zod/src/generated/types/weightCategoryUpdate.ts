@@ -10,4 +10,8 @@ export interface WeightCategoryUpdate {
   /** @nullable */
   durationSeconds?: number | null;
   wazaAriForIppon?: number;
+  /** @nullable */
+  minWeightKg?: number | null;
+  /** @nullable */
+  maxWeightKg?: number | null;
 }

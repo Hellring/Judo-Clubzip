@@ -7,6 +7,7 @@ import {
   participantsTable,
   athletesTable,
   fightsTable,
+  weighInsTable,
 } from "@workspace/db";
 import { eq, count, and, sql } from "drizzle-orm";
 
@@ -124,11 +125,11 @@ router.get("/:competitionId/categories", async (req, res) => {
 
 router.post("/:competitionId/categories", requireAuth(), async (req, res) => {
   const competitionId = parseInt(req.params.competitionId as string);
-  const { name, gender, maxWeightKg } = req.body;
+  const { name, gender, maxWeightKg, minWeightKg } = req.body;
   if (!name || !gender) return res.status(400).json({ error: "name, gender are required" });
   const [cat] = await db
     .insert(weightCategoriesTable)
-    .values({ competitionId, name, gender, maxWeightKg })
+    .values({ competitionId, name, gender, minWeightKg, maxWeightKg })
     .returning();
   return res.status(201).json({ ...cat, participantCount: 0 });
 });
@@ -136,10 +137,12 @@ router.post("/:competitionId/categories", requireAuth(), async (req, res) => {
 router.patch("/:competitionId/categories/:categoryId", requireAuth(), async (req, res) => {
   const categoryId = parseInt(req.params.categoryId as string);
   const competitionId = parseInt(req.params.competitionId as string);
-  const { durationSeconds, wazaAriForIppon } = req.body as { durationSeconds?: number | null; wazaAriForIppon?: number };
+  const { durationSeconds, wazaAriForIppon, minWeightKg, maxWeightKg } = req.body as { durationSeconds?: number | null; wazaAriForIppon?: number; minWeightKg?: number | null; maxWeightKg?: number | null };
   const updateData: Record<string, unknown> = {};
   if (durationSeconds !== undefined) updateData.durationSeconds = durationSeconds;
   if (wazaAriForIppon !== undefined) updateData.wazaAriForIppon = wazaAriForIppon;
+  if (minWeightKg !== undefined) updateData.minWeightKg = minWeightKg;
+  if (maxWeightKg !== undefined) updateData.maxWeightKg = maxWeightKg;
   const [updated] = await db.update(weightCategoriesTable).set(updateData).where(eq(weightCategoriesTable.id, categoryId)).returning();
   if (!updated) return res.status(404).json({ error: "Category not found" });
   const [r] = await db.select({ count: count() }).from(participantsTable).where(and(eq(participantsTable.competitionId, competitionId), eq(participantsTable.categoryId, categoryId)));
@@ -343,6 +346,114 @@ router.post("/:competitionId/generate-bracket", requireAuth(), async (req, res) 
   );
 
   return res.json(result);
+});
+
+// ---------- Weigh-ins ----------
+router.get("/:competitionId/weigh-ins", async (req, res) => {
+  const competitionId = parseInt(req.params.competitionId as string);
+  const records = await db.select().from(weighInsTable).where(eq(weighInsTable.competitionId, competitionId));
+  const result = await Promise.all(records.map(async (wi) => {
+    const athlete = await db.query.athletesTable.findFirst({ where: eq(athletesTable.id, wi.athleteId) });
+    return {
+      ...wi,
+      weighedAt: wi.weighedAt ? wi.weighedAt.toISOString() : null,
+      athlete: athlete ? { ...athlete, createdAt: athlete.createdAt.toISOString() } : null,
+    };
+  }));
+  return res.json(result);
+});
+
+router.post("/:competitionId/weigh-ins", requireAuth(), async (req, res) => {
+  const competitionId = parseInt(req.params.competitionId as string);
+  const { participantId, athleteId, actualWeightKg, passed } = req.body;
+  if (!participantId || !athleteId) return res.status(400).json({ error: "participantId and athleteId are required" });
+
+  const existing = await db.query.weighInsTable.findFirst({
+    where: and(eq(weighInsTable.competitionId, competitionId), eq(weighInsTable.participantId, participantId)),
+  });
+
+  if (existing) {
+    const [updated] = await db.update(weighInsTable)
+      .set({ actualWeightKg, passed: passed ?? existing.passed, weighedAt: new Date() })
+      .where(eq(weighInsTable.id, existing.id))
+      .returning();
+    const athlete = await db.query.athletesTable.findFirst({ where: eq(athletesTable.id, updated.athleteId) });
+    return res.json({ ...updated, weighedAt: updated.weighedAt?.toISOString() ?? null, athlete: athlete ? { ...athlete, createdAt: athlete.createdAt.toISOString() } : null });
+  } else {
+    const [created] = await db.insert(weighInsTable)
+      .values({ competitionId, participantId, athleteId, actualWeightKg, passed: passed ?? false, weighedAt: new Date() })
+      .returning();
+    const athlete = await db.query.athletesTable.findFirst({ where: eq(athletesTable.id, created.athleteId) });
+    return res.status(201).json({ ...created, weighedAt: created.weighedAt?.toISOString() ?? null, athlete: athlete ? { ...athlete, createdAt: athlete.createdAt.toISOString() } : null });
+  }
+});
+
+// ---------- Auto-assign categories by actual weigh-in weight ----------
+router.post("/:competitionId/auto-assign", requireAuth(), async (req, res) => {
+  const competitionId = parseInt(req.params.competitionId as string);
+  const categories = await db.select().from(weightCategoriesTable).where(eq(weightCategoriesTable.competitionId, competitionId));
+  const passedWeighIns = await db.select().from(weighInsTable).where(
+    and(eq(weighInsTable.competitionId, competitionId), eq(weighInsTable.passed, true))
+  );
+
+  let assigned = 0, skipped = 0;
+  for (const wi of passedWeighIns) {
+    if (wi.actualWeightKg == null) { skipped++; continue; }
+    const cat = categories.find(c => {
+      const minOk = c.minWeightKg == null || wi.actualWeightKg! >= c.minWeightKg;
+      const maxOk = c.maxWeightKg == null || wi.actualWeightKg! <= c.maxWeightKg;
+      return minOk && maxOk;
+    });
+    if (!cat) { skipped++; continue; }
+
+    const existingP = await db.query.participantsTable.findFirst({
+      where: and(eq(participantsTable.competitionId, competitionId), eq(participantsTable.athleteId, wi.athleteId)),
+    });
+
+    if (existingP) {
+      await db.update(participantsTable).set({ categoryId: cat.id }).where(eq(participantsTable.id, existingP.id));
+    } else {
+      await db.insert(participantsTable).values({ competitionId, athleteId: wi.athleteId, categoryId: cat.id });
+    }
+    assigned++;
+  }
+  return res.json({ assigned, skipped });
+});
+
+// ---------- Protocol (round-robin standings) ----------
+router.get("/:competitionId/protocol/:categoryId", async (req, res) => {
+  const competitionId = parseInt(req.params.competitionId as string);
+  const categoryId = parseInt(req.params.categoryId as string);
+
+  const finishedFights = await db.select().from(fightsTable).where(
+    and(eq(fightsTable.competitionId, competitionId), eq(fightsTable.categoryId, categoryId), eq(fightsTable.status, "finished"))
+  );
+  const catParticipants = await db.select().from(participantsTable).where(
+    and(eq(participantsTable.competitionId, competitionId), eq(participantsTable.categoryId, categoryId))
+  );
+
+  const standings = await Promise.all(catParticipants.map(async (p) => {
+    const athlete = await db.query.athletesTable.findFirst({ where: eq(athletesTable.id, p.athleteId) });
+    const myFights = finishedFights.filter(f => f.athlete1Id === p.athleteId || f.athlete2Id === p.athleteId);
+    let wins = 0, losses = 0, totalIppons = 0, totalWazaAri = 0, totalYuko = 0;
+    for (const f of myFights) {
+      const isA1 = f.athlete1Id === p.athleteId;
+      totalIppons += isA1 ? f.athlete1Ippon : f.athlete2Ippon;
+      totalWazaAri += isA1 ? f.athlete1WazaAri : f.athlete2WazaAri;
+      totalYuko += isA1 ? f.athlete1Yuko : f.athlete2Yuko;
+      if (f.winnerId === p.athleteId) wins++;
+      else if (f.winnerId !== null) losses++;
+    }
+    return {
+      athleteId: p.athleteId, participantId: p.id,
+      athlete: athlete ? { ...athlete, createdAt: athlete.createdAt.toISOString() } : null,
+      wins, losses, fightCount: myFights.length, points: wins * 2,
+      totalIppons, totalWazaAri, totalYuko,
+    };
+  }));
+
+  standings.sort((a, b) => b.points - a.points || b.totalIppons - a.totalIppons || b.totalWazaAri - a.totalWazaAri);
+  return res.json(standings.map((s, i) => ({ ...s, place: i + 1 })));
 });
 
 export default router;

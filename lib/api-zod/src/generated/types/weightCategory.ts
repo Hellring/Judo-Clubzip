@@ -13,6 +13,8 @@ export interface WeightCategory {
   name: string;
   gender: WeightCategoryGender;
   /** @nullable */
+  minWeightKg?: number | null;
+  /** @nullable */
   maxWeightKg?: number | null;
   /** @nullable */
   durationSeconds?: number | null;
