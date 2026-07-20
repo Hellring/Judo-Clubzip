@@ -5,7 +5,8 @@ import { Switch, Route, useLocation, Router as WouterRouter } from 'wouter';
 import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import { useEffect, useRef } from "react";
-import { useClerk } from "@clerk/react";
+import { useClerk, useAuth } from "@clerk/react";
+import { setAuthTokenGetter } from "@workspace/api-client-react";
 import "./lib/i18n";
 
 import LandingPage from "./pages/landing";
@@ -122,6 +123,15 @@ function HomeRedirect() {
   );
 }
 
+function ClerkAuthTokenSetter() {
+  const { getToken } = useAuth();
+  useEffect(() => {
+    setAuthTokenGetter(() => getToken());
+    return () => setAuthTokenGetter(null);
+  }, [getToken]);
+  return null;
+}
+
 function ClerkQueryClientCacheInvalidator() {
   const { addListener } = useClerk();
   const qc = useQueryClient();
@@ -153,6 +163,7 @@ function ClerkProviderWithRoutes() {
       routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
     >
       <QueryClientProvider client={queryClient}>
+        <ClerkAuthTokenSetter />
         <ClerkQueryClientCacheInvalidator />
         <Switch>
           <Route path="/" component={HomeRedirect} />
