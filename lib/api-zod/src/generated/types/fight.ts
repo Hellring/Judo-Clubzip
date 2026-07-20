@@ -22,9 +22,11 @@ export interface Fight {
   winnerId?: number | null;
   athlete1Ippon: number;
   athlete1WazaAri: number;
+  athlete1Yuko: number;
   athlete1Shido: number;
   athlete2Ippon: number;
   athlete2WazaAri: number;
+  athlete2Yuko: number;
   athlete2Shido: number;
   status: FightStatus;
   /** @nullable */

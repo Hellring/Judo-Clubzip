@@ -8,8 +8,9 @@ export const usersTable = pgTable("users", {
   email: text("email").notNull(),
   firstName: text("first_name"),
   lastName: text("last_name"),
-  role: text("role", { enum: ["super_admin", "club_admin", "coach", "athlete", "parent"] }).notNull().default("coach"),
+  role: text("role", { enum: ["super_admin", "club_admin", "coach", "athlete", "parent", "pending"] }).notNull().default("pending"),
   clubId: integer("club_id"),
+  parentId: integer("parent_id"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

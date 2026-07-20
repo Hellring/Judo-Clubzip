@@ -41,6 +41,7 @@ export const UserUpdateRole = {
   coach: 'coach',
   athlete: 'athlete',
   parent: 'parent',
+  pending: 'pending',
 } as const;
 
 export interface UserUpdate {
@@ -479,9 +480,11 @@ export interface Fight {
   winnerId?: number | null;
   athlete1Ippon: number;
   athlete1WazaAri: number;
+  athlete1Yuko: number;
   athlete1Shido: number;
   athlete2Ippon: number;
   athlete2WazaAri: number;
+  athlete2Yuko: number;
   athlete2Shido: number;
   status: FightStatus;
   /** @nullable */
@@ -539,6 +542,7 @@ export type FightEventEventType = typeof FightEventEventType[keyof typeof FightE
 export const FightEventEventType = {
   ippon: 'ippon',
   waza_ari: 'waza_ari',
+  yuko: 'yuko',
   shido: 'shido',
   hansoku: 'hansoku',
 } as const;
@@ -623,6 +627,7 @@ export const UserAdminRole = {
   coach: 'coach',
   athlete: 'athlete',
   parent: 'parent',
+  pending: 'pending',
 } as const;
 
 export interface UserAdmin {
@@ -638,6 +643,10 @@ export interface UserAdmin {
   clubId?: number | null;
   /** @nullable */
   clubName?: string | null;
+  /** @nullable */
+  parentId?: number | null;
+  /** @nullable */
+  parentName?: string | null;
   createdAt: string;
 }
 
@@ -650,12 +659,15 @@ export const UserAdminUpdateRole = {
   coach: 'coach',
   athlete: 'athlete',
   parent: 'parent',
+  pending: 'pending',
 } as const;
 
 export interface UserAdminUpdate {
   role?: UserAdminUpdateRole;
   /** @nullable */
   clubId?: number | null;
+  /** @nullable */
+  parentId?: number | null;
 }
 
 export type CreateUserInputRole = typeof CreateUserInputRole[keyof typeof CreateUserInputRole];
@@ -667,6 +679,7 @@ export const CreateUserInputRole = {
   coach: 'coach',
   athlete: 'athlete',
   parent: 'parent',
+  pending: 'pending',
 } as const;
 
 export interface CreateUserInput {
@@ -700,6 +713,7 @@ export type FightEventInputEventType = typeof FightEventInputEventType[keyof typ
 export const FightEventInputEventType = {
   ippon: 'ippon',
   waza_ari: 'waza_ari',
+  yuko: 'yuko',
   shido: 'shido',
   hansoku: 'hansoku',
 } as const;

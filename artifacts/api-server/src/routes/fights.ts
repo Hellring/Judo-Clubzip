@@ -133,9 +133,11 @@ router.post("/:fightId/events", requireAuth(), async (req, res) => {
 
     const a1Ippon = count(a1Events, "ippon");
     const a1WazaAri = count(a1Events, "waza_ari");
+    const a1Yuko = count(a1Events, "yuko");
     const a1Shido = count(a1Events, "shido");
     const a2Ippon = count(a2Events, "ippon");
     const a2WazaAri = count(a2Events, "waza_ari");
+    const a2Yuko = count(a2Events, "yuko");
     const a2Shido = count(a2Events, "shido");
 
     // Auto-finish on ippon or hansoku
@@ -159,9 +161,11 @@ router.post("/:fightId/events", requireAuth(), async (req, res) => {
       .set({
         athlete1Ippon: a1Ippon,
         athlete1WazaAri: a1WazaAri,
+        athlete1Yuko: a1Yuko,
         athlete1Shido: a1Shido,
         athlete2Ippon: a2Ippon,
         athlete2WazaAri: a2WazaAri,
+        athlete2Yuko: a2Yuko,
         athlete2Shido: a2Shido,
         winnerId,
         status,
@@ -193,9 +197,11 @@ router.delete("/:fightId/events/:eventId", requireAuth(), async (req, res) => {
     await db.update(fightsTable).set({
       athlete1Ippon: cnt(a1Events, "ippon"),
       athlete1WazaAri: cnt(a1Events, "waza_ari"),
+      athlete1Yuko: cnt(a1Events, "yuko"),
       athlete1Shido: cnt(a1Events, "shido"),
       athlete2Ippon: cnt(a2Events, "ippon"),
       athlete2WazaAri: cnt(a2Events, "waza_ari"),
+      athlete2Yuko: cnt(a2Events, "yuko"),
       athlete2Shido: cnt(a2Events, "shido"),
     }).where(eq(fightsTable.id, fightId));
   }

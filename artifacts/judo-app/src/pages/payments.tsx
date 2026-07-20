@@ -12,6 +12,7 @@ import {
   useGetClubPaymentSummary,
   getListPaymentsQueryKey,
   getGetClubPaymentSummaryQueryKey,
+  getListClubsQueryKey,
 } from "@workspace/api-client-react";
 import Layout from "@/components/layout";
 import { Button } from "@/components/ui/button";
@@ -32,7 +33,7 @@ export default function PaymentsPage() {
   const queryClient = useQueryClient();
   const { data: user } = useGetMe();
   const isSuperAdmin = user?.role === "super_admin";
-  const { data: clubs = [] } = useListClubs({ query: { enabled: isSuperAdmin } });
+  const { data: clubs = [] } = useListClubs({ query: { enabled: isSuperAdmin, queryKey: getListClubsQueryKey() } });
   const [selectedClubId, setSelectedClubId] = useState<number | undefined>();
   const clubId = user?.clubId ?? selectedClubId;
 
