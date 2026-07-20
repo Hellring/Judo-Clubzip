@@ -133,9 +133,9 @@ interface OseikomiButtonProps {
 
 function OseikomiButton({ active, elapsed, onStart, onStop, disabled }: OseikomiButtonProps) {
   const award =
-    elapsed >= 20 ? "→ ИППОН" :
-    elapsed >= 10 ? "→ ВАЗА-АРИ" :
-    elapsed >= 5  ? "→ ЮКО" : "";
+    elapsed >= 25 ? "→ ИППОН" :
+    elapsed >= 20 ? "→ ВАЗА-АРИ" :
+    elapsed >= 15 ? "→ ЮКО" : "";
 
   return (
     <button
@@ -387,14 +387,14 @@ export default function FightPage() {
     if (!athleteId || !fight) return;
 
     // Auto-award based on hold duration
-    if (elapsed >= 20) {
+    if (elapsed >= 25) {
       handleEvent(athleteId, FightEventInputEventType.ippon);
-    } else if (elapsed >= 10) {
+    } else if (elapsed >= 20) {
       handleEvent(athleteId, FightEventInputEventType.waza_ari);
-    } else if (elapsed >= 5) {
+    } else if (elapsed >= 15) {
       handleEvent(athleteId, FightEventInputEventType.yuko);
     }
-    // < 5 seconds → no score
+    // < 15 seconds → no score
   };
 
   const handleUndo = () => {
@@ -559,9 +559,9 @@ export default function FightPage() {
             <div className="text-right">
               <div className="text-2xl font-black text-orange-600">{oseikomiElapsed}с</div>
               <div className="text-xs text-orange-500">
-                {oseikomiElapsed >= 20 ? "→ ИППОН" :
-                 oseikomiElapsed >= 10 ? "→ ВАЗА-АРИ" :
-                 oseikomiElapsed >= 5  ? "→ ЮКО" : "продолжается..."}
+                {oseikomiElapsed >= 25 ? "→ ИППОН" :
+                 oseikomiElapsed >= 20 ? "→ ВАЗА-АРИ" :
+                 oseikomiElapsed >= 15 ? "→ ЮКО" : "продолжается..."}
               </div>
             </div>
           </div>
@@ -613,7 +613,7 @@ export default function FightPage() {
         {canScore && (
           <div className="rounded-xl border bg-muted/30 p-3 text-xs text-muted-foreground space-y-0.5">
             <p className="font-semibold text-foreground text-sm">Осекоми (удержание):</p>
-            <p>≥ 5с → Юко · ≥ 10с → Ваза-ари · ≥ 20с → Иппон (оценка начисляется при остановке)</p>
+            <p>≥ 15с → Юко · ≥ 20с → Ваза-ари · ≥ 25с → Иппон (оценка начисляется при остановке)</p>
           </div>
         )}
 
