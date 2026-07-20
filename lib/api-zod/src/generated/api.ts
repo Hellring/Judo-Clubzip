@@ -37,7 +37,7 @@ export const GetMeResponse = zod.object({
 export const UpdateMeBody = zod.object({
   "firstName": zod.string().optional(),
   "lastName": zod.string().optional(),
-  "role": zod.enum(['super_admin', 'club_admin', 'coach', 'athlete', 'parent']).optional()
+  "role": zod.enum(['super_admin', 'club_admin', 'coach', 'athlete', 'parent', 'pending']).optional()
 })
 
 export const UpdateMeResponse = zod.object({
@@ -61,9 +61,11 @@ export const ListAdminUsersResponseItem = zod.object({
   "email": zod.string(),
   "firstName": zod.string().nullish(),
   "lastName": zod.string().nullish(),
-  "role": zod.enum(['super_admin', 'club_admin', 'coach', 'athlete', 'parent']),
+  "role": zod.enum(['super_admin', 'club_admin', 'coach', 'athlete', 'parent', 'pending']),
   "clubId": zod.number().nullish(),
   "clubName": zod.string().nullish(),
+  "parentId": zod.number().nullish(),
+  "parentName": zod.string().nullish(),
   "createdAt": zod.string()
 })
 export const ListAdminUsersResponse = zod.array(ListAdminUsersResponseItem)
@@ -77,7 +79,7 @@ export const CreateAdminUserBody = zod.object({
   "password": zod.string(),
   "firstName": zod.string().optional(),
   "lastName": zod.string().optional(),
-  "role": zod.enum(['super_admin', 'club_admin', 'coach', 'athlete', 'parent']).optional(),
+  "role": zod.enum(['super_admin', 'club_admin', 'coach', 'athlete', 'parent', 'pending']).optional(),
   "clubId": zod.number().nullish()
 })
 
@@ -98,8 +100,9 @@ export const UpdateAdminUserParams = zod.object({
 })
 
 export const UpdateAdminUserBody = zod.object({
-  "role": zod.enum(['super_admin', 'club_admin', 'coach', 'athlete', 'parent']).optional(),
-  "clubId": zod.number().nullish()
+  "role": zod.enum(['super_admin', 'club_admin', 'coach', 'athlete', 'parent', 'pending']).optional(),
+  "clubId": zod.number().nullish(),
+  "parentId": zod.number().nullish()
 })
 
 export const UpdateAdminUserResponse = zod.object({
@@ -108,9 +111,11 @@ export const UpdateAdminUserResponse = zod.object({
   "email": zod.string(),
   "firstName": zod.string().nullish(),
   "lastName": zod.string().nullish(),
-  "role": zod.enum(['super_admin', 'club_admin', 'coach', 'athlete', 'parent']),
+  "role": zod.enum(['super_admin', 'club_admin', 'coach', 'athlete', 'parent', 'pending']),
   "clubId": zod.number().nullish(),
   "clubName": zod.string().nullish(),
+  "parentId": zod.number().nullish(),
+  "parentName": zod.string().nullish(),
   "createdAt": zod.string()
 })
 
@@ -250,9 +255,11 @@ export const ListClubCoachesResponseItem = zod.object({
   "email": zod.string(),
   "firstName": zod.string().nullish(),
   "lastName": zod.string().nullish(),
-  "role": zod.enum(['super_admin', 'club_admin', 'coach', 'athlete', 'parent']),
+  "role": zod.enum(['super_admin', 'club_admin', 'coach', 'athlete', 'parent', 'pending']),
   "clubId": zod.number().nullish(),
   "clubName": zod.string().nullish(),
+  "parentId": zod.number().nullish(),
+  "parentName": zod.string().nullish(),
   "createdAt": zod.string()
 })
 export const ListClubCoachesResponse = zod.array(ListClubCoachesResponseItem)
@@ -1007,9 +1014,11 @@ export const GenerateBracketResponseItem = zod.object({
   "winnerId": zod.number().nullish(),
   "athlete1Ippon": zod.number(),
   "athlete1WazaAri": zod.number(),
+  "athlete1Yuko": zod.number(),
   "athlete1Shido": zod.number(),
   "athlete2Ippon": zod.number(),
   "athlete2WazaAri": zod.number(),
+  "athlete2Yuko": zod.number(),
   "athlete2Shido": zod.number(),
   "status": zod.enum(['pending', 'in_progress', 'finished']),
   "round": zod.number().nullish(),
@@ -1068,9 +1077,11 @@ export const ListFightsResponseItem = zod.object({
   "winnerId": zod.number().nullish(),
   "athlete1Ippon": zod.number(),
   "athlete1WazaAri": zod.number(),
+  "athlete1Yuko": zod.number(),
   "athlete1Shido": zod.number(),
   "athlete2Ippon": zod.number(),
   "athlete2WazaAri": zod.number(),
+  "athlete2Yuko": zod.number(),
   "athlete2Shido": zod.number(),
   "status": zod.enum(['pending', 'in_progress', 'finished']),
   "round": zod.number().nullish(),
@@ -1143,7 +1154,7 @@ export const GetFightResponse = zod.object({
   "id": zod.number(),
   "fightId": zod.number(),
   "athleteId": zod.number(),
-  "eventType": zod.enum(['ippon', 'waza_ari', 'shido', 'hansoku']),
+  "eventType": zod.enum(['ippon', 'waza_ari', 'yuko', 'shido', 'hansoku']),
   "timestampSeconds": zod.number(),
   "createdAt": zod.string()
 }))
@@ -1207,9 +1218,11 @@ export const UpdateFightResponse = zod.object({
   "winnerId": zod.number().nullish(),
   "athlete1Ippon": zod.number(),
   "athlete1WazaAri": zod.number(),
+  "athlete1Yuko": zod.number(),
   "athlete1Shido": zod.number(),
   "athlete2Ippon": zod.number(),
   "athlete2WazaAri": zod.number(),
+  "athlete2Yuko": zod.number(),
   "athlete2Shido": zod.number(),
   "status": zod.enum(['pending', 'in_progress', 'finished']),
   "round": zod.number().nullish(),
@@ -1267,9 +1280,11 @@ export const StartFightResponse = zod.object({
   "winnerId": zod.number().nullish(),
   "athlete1Ippon": zod.number(),
   "athlete1WazaAri": zod.number(),
+  "athlete1Yuko": zod.number(),
   "athlete1Shido": zod.number(),
   "athlete2Ippon": zod.number(),
   "athlete2WazaAri": zod.number(),
+  "athlete2Yuko": zod.number(),
   "athlete2Shido": zod.number(),
   "status": zod.enum(['pending', 'in_progress', 'finished']),
   "round": zod.number().nullish(),
@@ -1332,9 +1347,11 @@ export const FinishFightResponse = zod.object({
   "winnerId": zod.number().nullish(),
   "athlete1Ippon": zod.number(),
   "athlete1WazaAri": zod.number(),
+  "athlete1Yuko": zod.number(),
   "athlete1Shido": zod.number(),
   "athlete2Ippon": zod.number(),
   "athlete2WazaAri": zod.number(),
+  "athlete2Yuko": zod.number(),
   "athlete2Shido": zod.number(),
   "status": zod.enum(['pending', 'in_progress', 'finished']),
   "round": zod.number().nullish(),
@@ -1357,7 +1374,7 @@ export const ListFightEventsResponseItem = zod.object({
   "id": zod.number(),
   "fightId": zod.number(),
   "athleteId": zod.number(),
-  "eventType": zod.enum(['ippon', 'waza_ari', 'shido', 'hansoku']),
+  "eventType": zod.enum(['ippon', 'waza_ari', 'yuko', 'shido', 'hansoku']),
   "timestampSeconds": zod.number(),
   "createdAt": zod.string()
 })
@@ -1373,7 +1390,7 @@ export const AddFightEventParams = zod.object({
 
 export const AddFightEventBody = zod.object({
   "athleteId": zod.number(),
-  "eventType": zod.enum(['ippon', 'waza_ari', 'shido', 'hansoku']),
+  "eventType": zod.enum(['ippon', 'waza_ari', 'yuko', 'shido', 'hansoku']),
   "timestampSeconds": zod.number()
 })
 

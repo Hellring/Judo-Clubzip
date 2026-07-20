@@ -1,6 +1,13 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useListAdminUsers, useUpdateAdminUser, useDeleteAdminUser, useListClubs, useCreateInvitation, useCreateAdminUser } from "@workspace/api-client-react";
+import {
+  useListAdminUsers,
+  useUpdateAdminUser,
+  useDeleteAdminUser,
+  useListClubs,
+  useCreateInvitation,
+  useCreateAdminUser,
+} from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import Layout from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,74 +17,110 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Shield, CheckCircle, Mail, Send, UserPlus, Trash2 } from "lucide-react";
+import { Shield, CheckCircle, Mail, Send, UserPlus, Trash2, AlertCircle, Users } from "lucide-react";
 
-const ROLES = ["super_admin", "club_admin", "coach", "athlete", "parent"] as const;
+const ROLES = ["super_admin", "club_admin", "coach", "athlete", "parent", "pending"] as const;
 type Role = typeof ROLES[number];
+const ASSIGNABLE_ROLES = ["super_admin", "club_admin", "coach", "athlete", "parent"] as const;
 
 function roleBadgeVariant(role: string): "default" | "secondary" | "outline" | "destructive" {
   if (role === "super_admin") return "destructive";
   if (role === "club_admin") return "default";
   if (role === "coach") return "secondary";
+  if (role === "pending") return "outline";
   return "outline";
 }
 
+type UserData = {
+  id: number;
+  email: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  role: string;
+  clubId?: number | null;
+  clubName?: string | null;
+  parentId?: number | null;
+  parentName?: string | null;
+};
+
 interface UserRowProps {
-  user: {
-    id: number;
-    email: string;
-    firstName?: string | null;
-    lastName?: string | null;
-    role: string;
-    clubId?: number | null;
-    clubName?: string | null;
-  };
+  user: UserData;
   clubs: { id: number; name: string }[];
-  onSave: (userId: number, role: Role, clubId: number | null) => void;
+  allUsers: UserData[];
+  onSave: (userId: number, role: Role, clubId: number | null, parentId: number | null) => void;
   onDelete: (userId: number) => void;
   saving: boolean;
   saved: boolean;
   deleting: boolean;
 }
 
-function UserRow({ user, clubs, onSave, onDelete, saving, saved, deleting }: UserRowProps) {
+function UserRow({ user, clubs, allUsers, onSave, onDelete, saving, saved, deleting }: UserRowProps) {
   const { t } = useTranslation();
   const [role, setRole] = useState<Role>(user.role as Role);
   const [clubId, setClubId] = useState<string>(user.clubId?.toString() ?? "none");
+  const [parentId, setParentId] = useState<string>(user.parentId?.toString() ?? "none");
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const changed = role !== user.role || (user.clubId?.toString() ?? "none") !== clubId;
+
+  const changed =
+    role !== user.role ||
+    (user.clubId?.toString() ?? "none") !== clubId ||
+    (user.parentId?.toString() ?? "none") !== parentId;
+
+  const isPending = user.role === "pending";
+
+  // Only show parent selector for athletes
+  const showParentSelector = role === "athlete" || role === "pending";
+  const parentUsers = allUsers.filter(u => u.role === "parent" || u.role === "super_admin" || u.role === "club_admin");
 
   return (
-    <div className="flex flex-col md:flex-row md:items-center gap-3 py-4 border-b last:border-0" data-testid={`row-user-${user.id}`}>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <p className="font-medium truncate">
-            {user.firstName || user.lastName
-              ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim()
-              : user.email}
-          </p>
-          {saved && <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />}
+    <div
+      className={`flex flex-col gap-3 py-4 border-b last:border-0 ${isPending ? "bg-amber-50/50 -mx-6 px-6 rounded-lg" : ""}`}
+      data-testid={`row-user-${user.id}`}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="font-medium truncate">
+              {user.firstName || user.lastName
+                ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim()
+                : user.email}
+            </p>
+            {isPending && (
+              <Badge variant="outline" className="text-amber-600 border-amber-400 bg-amber-50 text-xs">
+                <AlertCircle className="h-3 w-3 mr-1" />
+                Ожидает роли
+              </Badge>
+            )}
+            {saved && <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />}
+          </div>
+          <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+          {user.clubName && <p className="text-xs text-muted-foreground">{user.clubName}</p>}
+          {user.parentName && (
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <Users className="h-3 w-3" />
+              Родитель: {user.parentName}
+            </p>
+          )}
         </div>
-        <p className="text-sm text-muted-foreground truncate">{user.email}</p>
-        {user.clubName && (
-          <p className="text-xs text-muted-foreground">{user.clubName}</p>
-        )}
+        <Badge variant={roleBadgeVariant(user.role)} className="text-xs flex-shrink-0">
+          {t(user.role as any)}
+        </Badge>
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
         <Select value={role} onValueChange={(v) => setRole(v as Role)}>
-          <SelectTrigger className="w-44" data-testid={`select-role-${user.id}`}>
+          <SelectTrigger className="w-40" data-testid={`select-role-${user.id}`}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {ROLES.map(r => (
+            {ASSIGNABLE_ROLES.map(r => (
               <SelectItem key={r} value={r}>{t(r as any)}</SelectItem>
             ))}
           </SelectContent>
         </Select>
 
         <Select value={clubId} onValueChange={setClubId}>
-          <SelectTrigger className="w-44" data-testid={`select-club-${user.id}`}>
+          <SelectTrigger className="w-40" data-testid={`select-club-${user.id}`}>
             <SelectValue placeholder={t("NoClub")} />
           </SelectTrigger>
           <SelectContent>
@@ -88,18 +131,38 @@ function UserRow({ user, clubs, onSave, onDelete, saving, saved, deleting }: Use
           </SelectContent>
         </Select>
 
+        {showParentSelector && (
+          <Select value={parentId} onValueChange={setParentId}>
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="Родитель" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Без родителя</SelectItem>
+              {parentUsers.filter(u => u.id !== user.id).map(u => (
+                <SelectItem key={u.id} value={u.id.toString()}>
+                  {u.firstName || u.lastName
+                    ? `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim()
+                    : u.email}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+
         <Button
           size="sm"
           disabled={!changed || saving}
-          onClick={() => onSave(user.id, role, clubId === "none" ? null : parseInt(clubId))}
+          onClick={() => onSave(
+            user.id,
+            role,
+            clubId === "none" ? null : parseInt(clubId),
+            parentId === "none" ? null : parseInt(parentId),
+          )}
           data-testid={`btn-save-user-${user.id}`}
+          variant={isPending ? "default" : "secondary"}
         >
-          {t("SaveRole")}
+          {isPending ? "Назначить роль" : t("SaveRole")}
         </Button>
-
-        <Badge variant={roleBadgeVariant(user.role)} className="text-xs">
-          {t(user.role as any)}
-        </Badge>
 
         {confirmDelete ? (
           <div className="flex items-center gap-1">
@@ -112,9 +175,7 @@ function UserRow({ user, clubs, onSave, onDelete, saving, saved, deleting }: Use
             >
               {deleting ? "..." : "Да"}
             </Button>
-            <Button size="sm" variant="outline" onClick={() => setConfirmDelete(false)}>
-              Нет
-            </Button>
+            <Button size="sm" variant="outline" onClick={() => setConfirmDelete(false)}>Нет</Button>
           </div>
         ) : (
           <Button
@@ -138,7 +199,7 @@ function CreateUserSection({ clubs }: { clubs: { id: number; name: string }[] })
   const createUser = useCreateAdminUser();
   const [form, setForm] = useState({
     email: "", password: "", firstName: "", lastName: "",
-    role: "coach" as Role, clubId: "none",
+    role: "pending" as Role, clubId: "none",
   });
   const [result, setResult] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
@@ -159,7 +220,7 @@ function CreateUserSection({ clubs }: { clubs: { id: number; name: string }[] })
       {
         onSuccess: () => {
           setResult({ type: "success", message: `Пользователь ${form.email} создан.` });
-          setForm({ email: "", password: "", firstName: "", lastName: "", role: "coach", clubId: "none" });
+          setForm({ email: "", password: "", firstName: "", lastName: "", role: "pending", clubId: "none" });
           queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
         },
         onError: (err: any) => {
@@ -202,11 +263,12 @@ function CreateUserSection({ clubs }: { clubs: { id: number; name: string }[] })
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Роль</Label>
+              <Label>Роль <span className="text-muted-foreground text-xs">(можно оставить «Ожидает»)</span></Label>
               <Select value={form.role} onValueChange={v => setForm(f => ({ ...f, role: v as Role }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {ROLES.map(r => <SelectItem key={r} value={r}>{t(r as any)}</SelectItem>)}
+                  <SelectItem value="pending">Ожидает роли</SelectItem>
+                  {ASSIGNABLE_ROLES.map(r => <SelectItem key={r} value={r}>{t(r as any)}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -221,19 +283,17 @@ function CreateUserSection({ clubs }: { clubs: { id: number; name: string }[] })
               </Select>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Button type="submit" disabled={createUser.isPending || !form.email || !form.password}>
-              <UserPlus className="h-4 w-4 mr-2" />
-              {createUser.isPending ? "Создание..." : "Создать пользователя"}
-            </Button>
-          </div>
+          <Button type="submit" disabled={createUser.isPending || !form.email || !form.password}>
+            <UserPlus className="h-4 w-4 mr-2" />
+            {createUser.isPending ? "Создание..." : "Создать пользователя"}
+          </Button>
           {result && (
             <p className={`text-sm ${result.type === "success" ? "text-green-600" : "text-destructive"}`}>
               {result.type === "success" ? "✓ " : "✗ "}{result.message}
             </p>
           )}
           <p className="text-xs text-muted-foreground">
-            Пользователь сразу получит доступ — подтверждение почты не требуется.
+            Пользователь сразу получит доступ. Роль можно назначить позже в списке ниже.
           </p>
         </form>
       </CardContent>
@@ -253,13 +313,8 @@ function InviteSection() {
     invite.mutate(
       { data: { emailAddress: email.trim() } },
       {
-        onSuccess: (data) => {
-          setResult({ type: "success", message: data.message });
-          setEmail("");
-        },
-        onError: () => {
-          setResult({ type: "error", message: "Не удалось отправить приглашение." });
-        },
+        onSuccess: (data) => { setResult({ type: "success", message: data.message }); setEmail(""); },
+        onError: () => { setResult({ type: "error", message: "Не удалось отправить приглашение." }); },
       }
     );
   };
@@ -269,24 +324,18 @@ function InviteSection() {
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
           <Mail className="h-4 w-4" />
-          Пригласить пользователя
+          Пригласить пользователя по email
         </CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleInvite} className="flex gap-3 items-end">
           <div className="flex-1 space-y-2">
             <Label>Email-адрес</Label>
-            <Input
-              type="email"
-              placeholder="user@example.com"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              required
-            />
+            <Input type="email" placeholder="user@example.com" value={email} onChange={e => setEmail(e.target.value)} required />
           </div>
           <Button type="submit" disabled={invite.isPending || !email.trim()}>
             <Send className="h-4 w-4 mr-2" />
-            {invite.isPending ? "Отправка..." : "Отправить приглашение"}
+            {invite.isPending ? "Отправка..." : "Отправить"}
           </Button>
         </form>
         {result && (
@@ -295,7 +344,7 @@ function InviteSection() {
           </p>
         )}
         <p className="mt-2 text-xs text-muted-foreground">
-          Пользователь получит письмо со ссылкой для регистрации через Clerk.
+          Пользователь получит письмо со ссылкой. После регистрации роль будет «ожидает» — назначьте её в списке ниже.
         </p>
       </CardContent>
     </Card>
@@ -314,17 +363,20 @@ export default function AdminPage() {
 
   const QUERY_KEY = ["/api/admin/users"];
 
-  const handleSave = (userId: number, role: string, clubId: number | null) => {
+  const pendingUsers = users.filter(u => u.role === "pending");
+  const activeUsers = users.filter(u => u.role !== "pending");
+
+  const handleSave = (userId: number, role: string, clubId: number | null, parentId: number | null) => {
     updateUser.mutate(
-      { userId, data: { role: role as Role, clubId } },
+      { userId, data: { role: role as any, clubId, parentId } },
       {
         onSuccess: () => {
-          setSavedIds(prev => new Set(prev).add(userId));
-          setTimeout(() => setSavedIds(prev => {
+          setSavedIds(prev => {
             const next = new Set(prev);
-            next.delete(userId);
+            next.add(userId);
+            setTimeout(() => setSavedIds(p => { const n = new Set(p); n.delete(userId); return n; }), 2000);
             return next;
-          }), 2000);
+          });
           queryClient.invalidateQueries({ queryKey: QUERY_KEY });
         }
       }
@@ -332,15 +384,22 @@ export default function AdminPage() {
   };
 
   const handleDelete = (userId: number) => {
-    deleteUser.mutate(
-      { userId },
-      {
-        onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: QUERY_KEY });
-        }
-      }
-    );
+    deleteUser.mutate({ userId }, {
+      onSuccess: () => { queryClient.invalidateQueries({ queryKey: QUERY_KEY }); }
+    });
   };
+
+  const userRowProps = (user: UserData) => ({
+    key: user.id,
+    user,
+    clubs: clubs as { id: number; name: string }[],
+    allUsers: users as UserData[],
+    onSave: handleSave,
+    onDelete: handleDelete,
+    saving: updateUser.isPending,
+    saved: savedIds.has(user.id),
+    deleting: deleteUser.isPending,
+  });
 
   return (
     <Layout>
@@ -354,33 +413,48 @@ export default function AdminPage() {
         </div>
 
         <CreateUserSection clubs={clubs as { id: number; name: string }[]} />
-
         <InviteSection />
 
+        {/* Pending users — needs attention */}
+        {pendingUsers.length > 0 && (
+          <Card className="border-amber-300 bg-amber-50/30">
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2 text-amber-700">
+                <AlertCircle className="h-4 w-4" />
+                Ожидают назначения роли
+                <Badge variant="outline" className="border-amber-400 text-amber-700 text-xs ml-auto">
+                  {pendingUsers.length}
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="space-y-4">{[1,2].map(i => <Skeleton key={i} className="h-16" />)}</div>
+              ) : (
+                <div>
+                  {pendingUsers.map(user => (
+                    <UserRow {...userRowProps(user)} />
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* All users */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">{t("UserManagement")}</CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="space-y-4">
-                {[1,2,3].map(i => <Skeleton key={i} className="h-16" />)}
-              </div>
-            ) : users.length === 0 ? (
+              <div className="space-y-4">{[1,2,3].map(i => <Skeleton key={i} className="h-16" />)}</div>
+            ) : activeUsers.length === 0 ? (
               <p className="text-sm text-muted-foreground">{t("NoData")}</p>
             ) : (
               <div>
-                {users.map(user => (
-                  <UserRow
-                    key={user.id}
-                    user={user}
-                    clubs={clubs as { id: number; name: string }[]}
-                    onSave={handleSave}
-                    onDelete={handleDelete}
-                    saving={updateUser.isPending}
-                    saved={savedIds.has(user.id)}
-                    deleting={deleteUser.isPending}
-                  />
+                {activeUsers.map(user => (
+                  <UserRow {...userRowProps(user)} />
                 ))}
               </div>
             )}

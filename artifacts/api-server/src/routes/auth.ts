@@ -32,7 +32,7 @@ router.get("/me", requireAuth(), async (req, res) => {
       email,
       firstName,
       lastName,
-      role: isFirstUser ? "super_admin" : "coach",
+      role: isFirstUser ? "super_admin" : "pending",
     }).returning();
     user = created;
   }

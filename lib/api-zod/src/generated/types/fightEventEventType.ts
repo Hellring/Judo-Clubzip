@@ -12,6 +12,7 @@ export type FightEventEventType = typeof FightEventEventType[keyof typeof FightE
 export const FightEventEventType = {
   ippon: 'ippon',
   waza_ari: 'waza_ari',
+  yuko: 'yuko',
   shido: 'shido',
   hansoku: 'hansoku',
 } as const;

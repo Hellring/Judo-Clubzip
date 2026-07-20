@@ -20,5 +20,9 @@ export interface UserAdmin {
   clubId?: number | null;
   /** @nullable */
   clubName?: string | null;
+  /** @nullable */
+  parentId?: number | null;
+  /** @nullable */
+  parentName?: string | null;
   createdAt: string;
 }

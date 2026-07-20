@@ -14,10 +14,8 @@ async function isSuperAdmin(req: Parameters<typeof getAuth>[0]): Promise<boolean
   return user?.role === "super_admin";
 }
 
-router.get("/users", async (req, res) => {
-  if (!(await isSuperAdmin(req))) return res.status(403).json({ error: "Forbidden" });
-
-  const users = await db.select({
+async function getUsersWithParent() {
+  const allUsers = await db.select({
     id: usersTable.id,
     clerkId: usersTable.clerkId,
     email: usersTable.email,
@@ -26,24 +24,43 @@ router.get("/users", async (req, res) => {
     role: usersTable.role,
     clubId: usersTable.clubId,
     clubName: clubsTable.name,
+    parentId: usersTable.parentId,
     createdAt: usersTable.createdAt,
   })
     .from(usersTable)
     .leftJoin(clubsTable, eq(usersTable.clubId, clubsTable.id))
     .orderBy(usersTable.createdAt);
 
-  return res.json(users.map(u => ({ ...u, createdAt: u.createdAt.toISOString() })));
+  // Build a map for parent name lookup
+  const idToName: Record<number, string> = {};
+  for (const u of allUsers) {
+    if (u.firstName || u.lastName) {
+      idToName[u.id] = [u.firstName, u.lastName].filter(Boolean).join(" ");
+    }
+  }
+
+  return allUsers.map(u => ({
+    ...u,
+    parentName: u.parentId ? (idToName[u.parentId] ?? null) : null,
+    createdAt: u.createdAt.toISOString(),
+  }));
+}
+
+router.get("/users", async (req, res) => {
+  if (!(await isSuperAdmin(req))) return res.status(403).json({ error: "Forbidden" });
+  return res.json(await getUsersWithParent());
 });
 
 router.patch("/users/:userId", async (req, res) => {
   if (!(await isSuperAdmin(req))) return res.status(403).json({ error: "Forbidden" });
 
   const userId = parseInt(req.params.userId as string);
-  const { role, clubId } = req.body as { role?: string; clubId?: number | null };
+  const { role, clubId, parentId } = req.body as { role?: string; clubId?: number | null; parentId?: number | null };
 
   const updateData: Record<string, unknown> = {};
   if (role !== undefined) updateData.role = role;
   if (clubId !== undefined) updateData.clubId = clubId;
+  if (parentId !== undefined) updateData.parentId = parentId;
 
   const [updated] = await db.update(usersTable)
     .set(updateData)
@@ -52,15 +69,11 @@ router.patch("/users/:userId", async (req, res) => {
 
   if (!updated) return res.status(404).json({ error: "User not found" });
 
-  const club = updated.clubId
-    ? await db.query.clubsTable.findFirst({ where: eq(clubsTable.id, updated.clubId) })
-    : null;
+  // Fetch all users to build name map for parentName
+  const allUsers = await getUsersWithParent();
+  const result = allUsers.find(u => u.id === updated.id);
 
-  return res.json({
-    ...updated,
-    clubName: club?.name ?? null,
-    createdAt: updated.createdAt.toISOString(),
-  });
+  return res.json(result ?? { ...updated, parentName: null, createdAt: updated.createdAt.toISOString() });
 });
 
 router.post("/users", async (req, res) => {

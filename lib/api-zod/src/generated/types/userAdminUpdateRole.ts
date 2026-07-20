@@ -15,4 +15,5 @@ export const UserAdminUpdateRole = {
   coach: 'coach',
   athlete: 'athlete',
   parent: 'parent',
+  pending: 'pending',
 } as const;

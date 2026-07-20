@@ -11,4 +11,6 @@ export interface UserAdminUpdate {
   role?: UserAdminUpdateRole;
   /** @nullable */
   clubId?: number | null;
+  /** @nullable */
+  parentId?: number | null;
 }
