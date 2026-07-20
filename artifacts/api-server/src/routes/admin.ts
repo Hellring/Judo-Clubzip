@@ -124,11 +124,18 @@ router.delete("/users/:userId", async (req, res) => {
   const user = await db.query.usersTable.findFirst({ where: eq(usersTable.id, userId) });
   if (!user) return res.status(404).json({ error: "User not found" });
 
-  try {
-    await clerkClient.users.deleteUser(user.clerkId);
-  } catch (err: any) {
-    const msg = err?.errors?.[0]?.message ?? err?.message ?? "Failed to delete user in Clerk";
-    return res.status(400).json({ error: msg });
+  // Only attempt Clerk deletion for real Clerk users (not invited_ or placeholder IDs)
+  if (user.clerkId && !user.clerkId.startsWith("invited_")) {
+    try {
+      await clerkClient.users.deleteUser(user.clerkId);
+    } catch (err: any) {
+      const status = err?.status ?? err?.clerkError ? err.errors?.[0]?.code : null;
+      // If user not found in Clerk (already deleted or never registered), continue with DB deletion
+      if (status !== 404 && err?.errors?.[0]?.code !== "resource_not_found") {
+        const msg = err?.errors?.[0]?.message ?? err?.message ?? "Failed to delete user in Clerk";
+        return res.status(400).json({ error: msg });
+      }
+    }
   }
 
   await db.delete(usersTable).where(eq(usersTable.id, userId));
