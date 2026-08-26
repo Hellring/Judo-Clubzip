@@ -11,6 +11,28 @@ JudoClub Manager — это монорепозиторий на базе pnpm с
 
 ---
 
+## Быстрый запуск через Docker
+
+Для развёртывания на сервере с Docker Compose используйте отдельную
+инструкцию: [`docker/README.md`](docker/README.md).
+
+Краткий порядок действий:
+
+```bash
+cp .env.docker.example .env
+# Заполнить .env production-ключами Clerk и паролем PostgreSQL
+
+docker compose up -d db
+docker compose --profile tools run --rm migrate
+docker compose up -d --build api web
+```
+
+После запуска приложение доступно на порту `WEB_PORT` из `.env` (по умолчанию
+`80`). Подробная инструкция содержит настройку HTTPS, внешней PostgreSQL,
+обновление схемы, резервное копирование и безопасную остановку.
+
+---
+
 ## Требования к окружению
 
 ### Обязательные переменные окружения
