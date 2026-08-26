@@ -1,0 +1,17 @@
+.git
+.gitignore
+.cache
+.local
+.agents
+node_modules
+**/node_modules
+**/dist
+**/.tsbuildinfo
+**/.replit-artifact
+*.log
+.env
+.env.*
+!.env.docker.example
+zipFile.zip
+Dockerfile*
+docker-compose*.yml
