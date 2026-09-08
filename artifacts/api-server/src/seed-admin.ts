@@ -32,6 +32,13 @@ export async function seedAdminUser() {
       clerkId = created.id;
     } else {
       clerkId = clerkUsers.data[0].id;
+      const adminPassword = process.env.ADMIN_PASSWORD;
+      if (adminPassword) {
+        await clerkClient.users.updateUser(clerkId, {
+          password: adminPassword,
+          signOutOfOtherSessions: true,
+        });
+      }
     }
 
     const existing = await db.query.usersTable.findFirst({
