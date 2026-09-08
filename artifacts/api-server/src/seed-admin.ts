@@ -4,7 +4,6 @@ import { usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 
 const ADMIN_EMAIL = "hellring92@gmail.com";
-const ADMIN_PASSWORD = "Zse4Xdr5!@#$";
 const ADMIN_FIRST_NAME = "Admin";
 const ADMIN_LAST_NAME = "User";
 
@@ -17,9 +16,15 @@ export async function seedAdminUser() {
     let clerkId: string;
 
     if (clerkUsers.totalCount === 0) {
+      const adminPassword = process.env.ADMIN_PASSWORD;
+      if (!adminPassword) {
+        throw new Error(
+          "ADMIN_PASSWORD must be set before creating the predefined admin user",
+        );
+      }
       const created = await clerkClient.users.createUser({
         emailAddress: [ADMIN_EMAIL],
-        password: ADMIN_PASSWORD,
+        password: adminPassword,
         firstName: ADMIN_FIRST_NAME,
         lastName: ADMIN_LAST_NAME,
         skipPasswordChecks: false,

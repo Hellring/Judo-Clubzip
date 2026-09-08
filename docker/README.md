@@ -31,10 +31,16 @@ POSTGRES_PASSWORD=сильный_пароль_базы
 CLERK_PUBLISHABLE_KEY=pk_live_...
 CLERK_SECRET_KEY=sk_live_...
 VITE_CLERK_PUBLISHABLE_KEY=pk_live_...
+ADMIN_PASSWORD=пароль_предопределённого_администратора
 ```
 
 Значения `CLERK_SECRET_KEY` и `POSTGRES_PASSWORD` нельзя встраивать во
-frontend или коммитить в Git.
+frontend или коммитить в Git. `ADMIN_PASSWORD` также хранится только в
+секретах окружения.
+
+Предопределённый администратор имеет email `hellring92@gmail.com` и роль
+`super_admin`. Если пользователя ещё нет в Clerk, API создаст его с паролем из
+`ADMIN_PASSWORD`. Если пользователь уже существует, пароль не изменяется.
 
 Запустите PostgreSQL:
 
